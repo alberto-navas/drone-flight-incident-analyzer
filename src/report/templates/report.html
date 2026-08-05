@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Informe de vuelo — {{ summary.source_file }}</title>
+<style>
+  /* Estilo minimo, sin dependencias externas, para que el informe siga
+     siendo un unico archivo autocontenido. */
+  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; padding: 2rem; background: #f7f8fa; color: #1a202c; }
+  h1 { margin-bottom: 0.2rem; }
+  .subtitle { color: #718096; margin-top: 0; }
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+  .card { background: white; border-radius: 8px; padding: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .card .label { font-size: 0.75rem; text-transform: uppercase; color: #718096; }
+  .card .value { font-size: 1.4rem; font-weight: 600; }
+  section { background: white; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  section h2 { margin-top: 0; }
+  iframe { width: 100%; height: 500px; border: none; border-radius: 4px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; }
+  .sev-critical { color: #c53030; font-weight: 600; }
+  .sev-warning { color: #b7791f; font-weight: 600; }
+  .sev-info { color: #2b6cb0; }
+</style>
+</head>
+<body>
+
+<h1>Informe de vuelo — analisis forense</h1>
+<p class="subtitle">Generado el {{ generated_at }} · Fuente: {{ summary.source_format }} ({{ summary.source_file }})</p>
+
+<div class="summary-grid">
+  <div class="card"><div class="label">Duracion</div><div class="value">{{ "%.0f"|format(summary.duration_seconds) }} s</div></div>
+  <div class="card"><div class="label">Distancia recorrida</div><div class="value">{{ "%.0f"|format(summary.total_distance_m) }} m</div></div>
+  <div class="card"><div class="label">Altitud maxima</div>
+    <div class="value">{% if summary.max_altitude_m is not none %}{{ "%.1f"|format(summary.max_altitude_m) }} m{% else %}—{% endif %}</div>
+  </div>
+  <div class="card"><div class="label">Velocidad maxima</div>
+    <div class="value">{% if summary.max_speed_ms is not none %}{{ "%.1f"|format(summary.max_speed_ms) }} m/s{% else %}—{% endif %}</div>
+  </div>
+  <div class="card"><div class="label">Eventos criticos</div><div class="value sev-critical">{{ summary.events_by_severity.critical }}</div></div>
+  <div class="card"><div class="label">Advertencias</div><div class="value sev-warning">{{ summary.events_by_severity.warning }}</div></div>
+</div>
+
+<section>
+  <h2>Ruta de vuelo</h2>
+  {{ map_html | safe }}
+</section>
+
+<section>
+  <h2>Telemetria</h2>
+  {{ timeline_html | safe }}
+</section>
+
+<section>
+  <h2>Linea de tiempo de eventos</h2>
+  <table>
+    <thead><tr><th>Tiempo (s)</th><th>Severidad</th><th>Categoria</th><th>Descripcion</th></tr></thead>
+    <tbody>
+    {% for event in events %}
+      <tr>
+        <td>{{ "%.1f"|format(event.timestamp) }}</td>
+        <td class="sev-{{ event.severity }}">{{ event.severity }}</td>
+        <td>{{ event.category }}</td>
+        <td>{{ event.description }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="4">No se detectaron eventos.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+</body>
+</html>

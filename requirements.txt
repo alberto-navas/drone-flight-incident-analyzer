@@ -1,0 +1,6 @@
+pymavlink>=2.4.41   # parser oficial de logs ArduPilot (.bin dataflash)
+pyulog>=1.2.0        # parser oficial de logs PX4 (.ulog)
+pandas>=2.2.0        # manipulacion tabular de telemetria (usado por los 3 parsers)
+folium>=0.16.0        # mapas interactivos (Leaflet) para la trayectoria de vuelo
+plotly>=5.20.0        # graficos interactivos de altitud/velocidad/bateria
+jinja2>=3.1.0          # plantillas para el informe HTML final
