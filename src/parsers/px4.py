@@ -10,10 +10,16 @@ topico por separado, en vez de iterar un unico flujo como en ArduPilot.
 """
 
 import math
+from pathlib import Path
 
 from pyulog import ULog
 
 from .base import FlightEvent, FlightLog, FlightRecord, Source
+
+# Cabecera magica que todo archivo ULog valido empieza (ver pyulog.core.ULog.HEADER_BYTES).
+# Se usa para validar el archivo ANTES de pasarselo a pyulog: ver el
+# comentario en parse_px4_log sobre por que importa hacerlo asi.
+_ULOG_MAGIC = b"\x55\x4c\x6f\x67\x01\x12\x35"
 
 # Subconjunto del enum vehicle_status_s::nav_state de PX4. No es exhaustivo:
 # solo cubrimos los modos mas comunes para que el informe sea legible: los
@@ -78,7 +84,25 @@ def _primary_dataset(ulog: ULog, topic_name: str):
 
 
 def parse_px4_log(file_path: str) -> FlightLog:
-    """Lee un log .ulog de PX4 y lo normaliza a FlightLog."""
+    """
+    Lee un log .ulog de PX4 y lo normaliza a FlightLog.
+
+    Antes de instanciar `ULog`, se valida a mano que el archivo tiene la
+    cabecera minima esperada. No es solo una comprobacion redundante: la
+    propia libreria pyulog abre el archivo (`open(file_path, "rb")`) ANTES
+    de validar su contenido, y si esa validacion falla no cierra el archivo
+    (la excepcion aborta la construccion del objeto a mitad, sin dejarnos
+    nunca una referencia con la que cerrarlo). En Windows eso bloquea borrar
+    el archivo despues (p.ej. limpiar el directorio temporal de una
+    peticion web) hasta que el recolector de basura lo libere — y con
+    excepciones encadenadas (`raise ... from exc`) eso puede tardar hasta
+    que el error termina de propagarse del todo. Validar antes evita entrar
+    en ese camino para los casos mas comunes (archivo vacio o de otro formato).
+    """
+    header = Path(file_path).read_bytes()[:16]
+    if len(header) < 16 or header[:7] != _ULOG_MAGIC:
+        raise ValueError("el archivo no tiene una cabecera ULog valida")
+
     ulog = ULog(file_path)
 
     log = FlightLog(source=Source.PX4, source_file=file_path)

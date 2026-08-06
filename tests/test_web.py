@@ -80,16 +80,17 @@ def test_analyze_path_traversal_filename_is_sanitized():
     """
     Un nombre de archivo con componentes de ruta ("../../etc/passwd.bin")
     no debe escribirse fuera del directorio temporal de la peticion.
-    pymavlink es tolerante con contenido invalido (registra avisos de
-    "bad header" pero no lanza excepcion), asi que la peticion termina en
-    200 con un FlightLog vacio; lo que importa aqui es que el nombre se
-    trato como el simple "passwd.bin" (ver _safe_filename en app.py), no
-    como una ruta que escriba fuera del directorio temporal.
+    El contenido no es un log real, asi que la peticion termina en 400 (ver
+    tests/test_malformed_inputs.py); lo que importa aqui es que el nombre
+    se trato como el simple "passwd.bin" (ver _safe_filename en app.py), no
+    como una ruta que escriba fuera del directorio temporal — ni en el
+    propio sistema de archivos ni reflejado tal cual en el mensaje de error.
     """
     malicious_name = "../../../../etc/passwd.bin"
     files = {"files": (malicious_name, b"no es un log real", "application/octet-stream")}
     response = client.post("/analyze", files=files)
 
-    assert response.status_code == 200
-    assert "passwd.bin" in response.text
-    assert "etc/passwd" not in response.text
+    assert response.status_code == 400
+    detail = response.json()["detail"]
+    assert "passwd.bin" in detail
+    assert "etc/passwd" not in detail

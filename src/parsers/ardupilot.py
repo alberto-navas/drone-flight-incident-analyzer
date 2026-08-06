@@ -16,6 +16,10 @@ originales y el resto del pipeline (mapas, deteccion de anomalias) ya esta
 preparado para trabajar con campos ausentes.
 """
 
+import contextlib
+import io
+from pathlib import Path
+
 from pymavlink import mavutil
 
 from .base import FlightEvent, FlightLog, FlightRecord, Source
@@ -69,19 +73,44 @@ def parse_ardupilot_log(file_path: str) -> FlightLog:
     log binario (en vez de un stream MAVLink en vivo) y devuelve un
     DFReader, que expone la misma API `recv_match()` que se usaria para leer
     telemetria en tiempo real de un dron conectado.
+
+    Ante un archivo corrupto, DFReader no lanza excepcion por cada byte que
+    no reconoce: emite por stderr un `print()` de diagnostico
+    ("bad header...") por cada uno, lo cual puede ser miles de lineas de
+    ruido en los logs del servidor si alguien sube un archivo invalido a la
+    interfaz web. Se silencia esa salida aqui; si el resultado final no
+    tiene ninguna muestra, parse_log() (src/pipeline.py) ya lo convierte en
+    un error claro para el usuario.
     """
-    mlog = mavutil.mavlink_connection(file_path)
+    # Comprobacion previa deliberada para el caso de archivo vacio: sin
+    # esto, mavutil.mavlink_connection() abre el archivo internamente y
+    # LUEGO falla al hacer mmap sobre 0 bytes, dejando ese descriptor de
+    # archivo abierto sin que lleguemos a tener una referencia con la que
+    # cerrarlo (el error ocurre a mitad de la construccion del DFReader).
+    # En Windows eso bloquea borrar el archivo despues (p.ej. limpiar el
+    # directorio temporal de una peticion web) hasta que el recolector de
+    # basura de Python decida liberarlo. Evitamos todo el problema
+    # detectando el caso antes de llamar a pymavlink.
+    if Path(file_path).stat().st_size == 0:
+        raise ValueError("el archivo esta vacio")
+
     log = FlightLog(source=Source.ARDUPILOT, source_file=file_path)
 
+    mlog = None
     try:
-        _consume_messages(mlog, log)
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            mlog = mavutil.mavlink_connection(file_path)
+            _consume_messages(mlog, log)
     finally:
         # DFReader mantiene el archivo abierto internamente; cerrarlo
         # explicitamente evita fugas de descriptor de archivo. Es
         # especialmente importante en Windows, donde un archivo no se puede
         # borrar (p.ej. limpiar un directorio temporal) mientras siga
         # abierto por el proceso — a diferencia de Unix, que si lo permite.
-        mlog.close()
+        # `mlog` puede seguir siendo None si mavlink_connection() fallo antes
+        # de devolver nada (p.ej. archivo vacio): no hay nada que cerrar.
+        if mlog is not None:
+            mlog.close()
 
     log.metadata["parsed_message_count"] = len(log.records) + len(log.events)
     return log

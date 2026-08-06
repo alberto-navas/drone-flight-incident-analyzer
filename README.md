@@ -175,12 +175,14 @@ detecta `render.yaml` solo.
 pytest -v
 ```
 
-55 tests que cubren los siete módulos de `src/analysis/`, los cuatro
-parsers, el CLI y la interfaz web de extremo a extremo, usando fixtures pequeños versionados en `tests/fixtures/` (un
-recorte real de ArduPilot de 64 KB, un log real de PX4 de ~900 KB, y CSVs/SRT
-sintéticos) — no dependen de descargar nada externo, así que corren igual en
-local que en CI. Se ejecutan automáticamente en cada `push` vía GitHub
-Actions (`.github/workflows/tests.yml`), en Ubuntu y Windows.
+63 tests que cubren los siete módulos de `src/analysis/`, los cuatro
+parsers, el CLI, la interfaz web y casos de entrada malformada de extremo a
+extremo, usando fixtures pequeños versionados en `tests/fixtures/` (un
+recorte real de ArduPilot de 64 KB, un log real de PX4 de ~900 KB, CSVs/SRT
+sintéticos, y archivos vacíos/corruptos en `tests/fixtures/malformed/`) — no
+dependen de descargar nada externo, así que corren igual en local que en
+CI. Se ejecutan automáticamente en cada `push` vía GitHub Actions
+(`.github/workflows/tests.yml`), en Ubuntu y Windows.
 
 ## Calidad de código
 
@@ -194,6 +196,15 @@ Configurado en `pyproject.toml`. Se comprueba automáticamente en cada `push`
 dependencias pesadas del proyecto). Detectó de paso dos fugas reales de
 descriptor de archivo (el lector de ArduPilot y el subproceso de
 `blackbox_decode` no cerraban el archivo explícitamente), ya corregidas.
+
+**Robustez ante archivos raros**: subir un archivo vacío, corrupto, o con la
+extensión equivocada siempre produce un mensaje de error claro (nunca un
+traceback ni un 500) — ver `tests/test_malformed_inputs.py`. Se descubrió
+durante las pruebas que `pymavlink` y `pyulog` abren el archivo antes de
+validar su contenido y no lo cierran si esa validación falla a mitad de
+construir su lector; en Windows eso bloqueaba borrar el archivo temporal
+justo después del error. Se corrigió validando la cabecera de cada formato
+a mano antes de pasárselo a la librería, evitando el problema de raíz.
 
 ## Datos de prueba
 
