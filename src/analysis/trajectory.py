@@ -129,18 +129,21 @@ def build_telemetry_timeline(flight_log: FlightLog) -> go.Figure:
     fig.add_trace(go.Scatter(x=rssi_x, y=rssi_y, name="Señal RC", line=dict(color="#805ad5")), row=3, col=1)
 
     # Las lineas verticales marcan cuando ocurrio cada evento no-informativo,
-    # superpuestas a los tres sub-graficos a la vez (annotation en el eje X
-    # compartido) para poder correlacionar telemetria y sucesos de un vistazo.
+    # superpuestas a los tres sub-graficos (eje X compartido) para poder
+    # correlacionar telemetria y sucesos de un vistazo. El texto de la
+    # categoria solo se pone en la fila 1 (poner el mismo texto en las 3
+    # filas era redundante y, con annotation_position="top", chocaba
+    # visualmente con el titulo de cada subplot); "bottom" lo situa dentro
+    # del propio panel, lejos del titulo.
     for event in flight_log.events:
         if event.severity == "info":
             continue
-        fig.add_vline(
-            x=event.timestamp,
-            line_dash="dot",
-            line_color=_SEVERITY_COLORS[event.severity],
-            annotation_text=event.category,
-            annotation_position="top",
-        )
+        color = _SEVERITY_COLORS[event.severity]
+        fig.add_vline(x=event.timestamp, line_dash="dot", line_color=color, row=1, col=1,
+                       annotation_text=event.category, annotation_position="bottom",
+                       annotation_font_size=9, annotation_textangle=-90)
+        fig.add_vline(x=event.timestamp, line_dash="dot", line_color=color, row=2, col=1)
+        fig.add_vline(x=event.timestamp, line_dash="dot", line_color=color, row=3, col=1)
 
     fig.update_xaxes(title_text="Tiempo desde el inicio del log (s)", row=3, col=1)
     fig.update_layout(height=800, showlegend=True, title_text=f"Telemetria — {flight_log.source.value}")

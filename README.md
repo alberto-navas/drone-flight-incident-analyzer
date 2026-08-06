@@ -11,6 +11,15 @@ manipulación del propio log, cruza el vuelo con el vídeo grabado (DJI SRT),
 y compara varios vuelos a la vez en un panel de flota — todo en informes
 HTML autocontenidos.
 
+<p align="center">
+  <img src="docs/screenshots/informe_individual.png" alt="Informe de vuelo: ruta, telemetría, estimación de impacto, sincronización con vídeo y verificación de integridad" width="800">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/panel_flota.png" alt="Panel de flota: rutas combinadas, patrones de fallo del conjunto y tabla comparativa" width="49%">
+  <img src="docs/screenshots/interfaz_web.png" alt="Interfaz web: formulario de subida de logs" width="49%">
+</p>
+
 ## Motivación
 
 Con el aumento de drones derribados/estrellados (uso civil y militar), la
