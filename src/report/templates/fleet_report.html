@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Panel de flota — {{ flight_count }} vuelos analizados</title>
+<style>
+  /* Mismo lenguaje visual que report.html, para que ambos informes se sientan parte del mismo producto. */
+  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; padding: 2rem; background: #f7f8fa; color: #1a202c; }
+  h1 { margin-bottom: 0.2rem; }
+  .subtitle { color: #718096; margin-top: 0; }
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+  .card { background: white; border-radius: 8px; padding: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .card .label { font-size: 0.75rem; text-transform: uppercase; color: #718096; }
+  .card .value { font-size: 1.4rem; font-weight: 600; }
+  section { background: white; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  section h2 { margin-top: 0; }
+  iframe { width: 100%; height: 500px; border: none; border-radius: 4px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; }
+  .sev-critical { color: #c53030; font-weight: 600; }
+  .sev-warning { color: #b7791f; font-weight: 600; }
+  .swatch { display: inline-block; width: 0.8rem; height: 0.8rem; border-radius: 50%; margin-right: 0.4rem; vertical-align: middle; }
+  .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.78rem; font-weight: 600; }
+  .badge-clean { background: #c6f6d5; color: #22543d; }
+  .badge-dirty { background: #fed7d7; color: #822727; }
+  .badge-neutral { background: #e2e8f0; color: #4a5568; }
+</style>
+</head>
+<body>
+
+<h1>Panel de flota — análisis comparativo</h1>
+<p class="subtitle">Generado el {{ generated_at }} · {{ flight_count }} vuelos analizados conjuntamente</p>
+
+<div class="summary-grid">
+  <div class="card"><div class="label">Vuelos analizados</div><div class="value">{{ flight_count }}</div></div>
+  <div class="card"><div class="label">Eventos críticos (total)</div><div class="value sev-critical">{{ total_critical }}</div></div>
+  <div class="card"><div class="label">Advertencias (total)</div><div class="value sev-warning">{{ total_warning }}</div></div>
+  <div class="card"><div class="label">Vuelos con posible impacto</div><div class="value">{{ flights_with_impact }}</div></div>
+  <div class="card"><div class="label">Vuelos con indicios de integridad</div><div class="value">{{ flights_with_integrity_issues }}</div></div>
+</div>
+
+<section>
+  <h2>Rutas combinadas</h2>
+  {{ map_html | safe }}
+</section>
+
+<section>
+  <h2>Patrones de fallo en el conjunto</h2>
+  {{ histogram_html | safe }}
+</section>
+
+<section>
+  <h2>Comparativa de vuelos</h2>
+  <table>
+    <thead>
+      <tr>
+        <th></th>
+        <th>Archivo</th>
+        <th>Formato</th>
+        <th>Duración</th>
+        <th>Distancia</th>
+        <th>Críticos</th>
+        <th>Advertencias</th>
+        <th>Impacto estimado</th>
+        <th>Integridad</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for flight in flights %}
+      <tr>
+        <td><span class="swatch" style="background:{{ flight.color }};"></span></td>
+        <td>{{ flight.source_file }}</td>
+        <td>{{ flight.source_format }}</td>
+        <td>{{ "%.0f"|format(flight.duration_seconds) }} s</td>
+        <td>{{ "%.0f"|format(flight.total_distance_m) }} m</td>
+        <td class="sev-critical">{{ flight.critical_events }}</td>
+        <td class="sev-warning">{{ flight.warning_events }}</td>
+        <td>
+          {% if flight.has_impact_estimate %}<span class="badge badge-dirty">sí</span>{% else %}<span class="badge badge-neutral">no</span>{% endif %}
+        </td>
+        <td>
+          {% if flight.integrity_clean %}<span class="badge badge-clean">sin indicios</span>{% else %}<span class="badge badge-dirty">revisar</span>{% endif %}
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="9">No se analizó ningún vuelo.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+</body>
+</html>

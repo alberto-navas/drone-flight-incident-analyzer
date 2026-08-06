@@ -16,6 +16,7 @@ from ..analysis.geo import haversine_distance_m
 from ..analysis.impact import estimate_impact
 from ..analysis.integrity import check_integrity
 from ..analysis.trajectory import build_route_map, build_telemetry_timeline
+from ..analysis.video_sync import SyncedEvent
 from ..parsers.base import FlightLog
 
 _TEMPLATES_DIR = Path(__file__).parent / "templates"
@@ -55,7 +56,12 @@ def _compute_summary(flight_log: FlightLog) -> dict:
     }
 
 
-def generate_report(flight_log: FlightLog, output_path: str, mass_kg: float | None = None) -> str:
+def generate_report(
+    flight_log: FlightLog,
+    output_path: str,
+    mass_kg: float | None = None,
+    synced_events: list[SyncedEvent] | None = None,
+) -> str:
     """
     Genera el informe HTML de un FlightLog ya parseado (y, idealmente, ya pasado por detect_anomalies).
 
@@ -67,6 +73,10 @@ def generate_report(flight_log: FlightLog, output_path: str, mass_kg: float | No
     `mass_kg` es opcional y solo se usa para estimar la energia cinetica de
     impacto (ver src/analysis/impact.py): sin ella, la estimacion de impacto
     se sigue calculando (posicion, velocidad) pero sin energia.
+
+    `synced_events` es opcional: si se aporta (ver src/analysis/video_sync.py),
+    el informe incluye una seccion cruzando cada evento con su fotograma de
+    video correspondiente y la verificacion cruzada de GPS log-vs-video.
     """
     impact = estimate_impact(flight_log, mass_kg=mass_kg)
     integrity = check_integrity(flight_log)
@@ -97,6 +107,7 @@ def generate_report(flight_log: FlightLog, output_path: str, mass_kg: float | No
         timeline_html=timeline_html,
         impact=impact,
         integrity=integrity,
+        synced_events=synced_events,
         generated_at=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
     )
 

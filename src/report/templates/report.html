@@ -108,6 +108,34 @@
   </table>
 </section>
 
+{% if synced_events %}
+<section>
+  <h2>Sincronización con vídeo</h2>
+  <p class="subtitle" style="margin-top:0;">
+    Cada evento del log correlacionado con su fotograma de vídeo más cercano. La columna "GPS log vs. vídeo"
+    compara la posición que dice el log del autopiloto con la que dice el archivo de subtítulos del vídeo en
+    ese mismo instante — dos fuentes de GPS independientes que, si no coinciden, merece la pena revisar.
+  </p>
+  <table>
+    <thead><tr><th>Tiempo en el log (s)</th><th>Tiempo en el vídeo (s)</th><th>Evento</th><th>GPS log vs. vídeo</th></tr></thead>
+    <tbody>
+    {% for s in synced_events %}
+      <tr>
+        <td>{{ "%.1f"|format(s.flight_event_timestamp) }}</td>
+        <td>{% if s.video_timestamp_s is not none %}{{ "%.1f"|format(s.video_timestamp_s) }}{% else %}—{% endif %}</td>
+        <td>{{ s.description }}</td>
+        <td>
+          {% if s.gps_cross_check_distance_m is not none %}
+            {{ "%.1f"|format(s.gps_cross_check_distance_m) }} m
+          {% else %}—{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+
 <section>
   <h2>Verificación de integridad
     {% if integrity.looks_clean %}
