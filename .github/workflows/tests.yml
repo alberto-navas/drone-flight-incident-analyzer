@@ -1,0 +1,33 @@
+name: Tests
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  test:
+    # Matriz Ubuntu + Windows: el desarrollo se hizo en Windows, pero la
+    # herramienta esta pensada para correr en cualquier sitio (p.ej. un
+    # servidor Linux de analisis); confirmar ambos evita sorpresas de
+    # rutas/codificacion especificas de una sola plataforma.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Ejecutar tests
+        run: pytest -v

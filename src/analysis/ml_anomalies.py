@@ -77,7 +77,13 @@ def _build_feature_matrix(flight_log: FlightLog) -> pd.DataFrame | None:
     if len(feature_cols) < 2:
         return None  # con una sola magnitud no hay "patron conjunto" que buscar
 
-    df["timestamp"] = pd.to_timedelta(df["timestamp"], unit="s")
+    # astype a nanosegundos explicito: pandas elige automaticamente la
+    # resolucion mas "gruesa" que representa los valores de entrada sin
+    # perdida (p.ej. timedelta64[s] si todos los timestamps son enteros), y
+    # luego un resample a sub-segundo sobre un indice en segundos falla con
+    # un ValueError de casting. Forzar nanosegundos evita ese problema pase
+    # lo que pase con los valores de entrada.
+    df["timestamp"] = pd.to_timedelta(df["timestamp"], unit="s").astype("timedelta64[ns]")
     df = df.set_index("timestamp")[feature_cols]
 
     # Remuestreo a cadencia fija (media por ventana) con relleno hacia

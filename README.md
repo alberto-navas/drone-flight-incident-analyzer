@@ -1,5 +1,7 @@
 # Drone Flight Incident Analyzer
 
+![Tests](https://github.com/alberto-navas/drone-flight-incident-analyzer/actions/workflows/tests.yml/badge.svg)
+
 Herramienta de análisis forense de logs de vuelo de drones. Ingiere logs de
 telemetría en los tres formatos abiertos más usados en autopilotos reales
 (**ArduPilot** `.bin`, **PX4** `.ulog`, **Betaflight** blackbox `.BBL`/CSV),
@@ -50,7 +52,10 @@ remuestreadas y al menos 2 magnitudes numéricas presentes en el log para
 producir algo fiable; si no los hay, no da resultado en vez de forzar uno poco
 fiable. En el informe, cada hallazgo lleva una etiqueta "ML" (frente a "regla")
 para dejar claro que es un patrón estadístico, no un umbral justificable, y
-merece más revisión humana.
+merece más revisión humana. Matiz importante (documentado tras escribir los
+tests): Isolation Forest con `contamination` fijo siempre marca ~esa fracción
+de puntos como anómalos, incluso en un vuelo perfectamente normal — no hay
+garantía de "cero falsos positivos", es una propiedad del algoritmo.
 
 ## Arquitectura
 
@@ -119,6 +124,19 @@ python -m src.cli data/samples/ardupilot/*.bin --output output/flota.html
 ```
 
 El informe se genera en `output/<nombre_del_log>.html` (o `output/fleet_report.html` en modo flota).
+
+## Tests
+
+```bash
+pytest -v
+```
+
+44 tests que cubren los siete módulos de `src/analysis/` y los cuatro
+parsers, usando fixtures pequeños versionados en `tests/fixtures/` (un
+recorte real de ArduPilot de 64 KB, un log real de PX4 de ~900 KB, y CSVs/SRT
+sintéticos) — no dependen de descargar nada externo, así que corren igual en
+local que en CI. Se ejecutan automáticamente en cada `push` vía GitHub
+Actions (`.github/workflows/tests.yml`), en Ubuntu y Windows.
 
 ## Datos de prueba
 
