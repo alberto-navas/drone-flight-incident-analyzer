@@ -71,8 +71,24 @@ def parse_ardupilot_log(file_path: str) -> FlightLog:
     telemetria en tiempo real de un dron conectado.
     """
     mlog = mavutil.mavlink_connection(file_path)
-
     log = FlightLog(source=Source.ARDUPILOT, source_file=file_path)
+
+    try:
+        _consume_messages(mlog, log)
+    finally:
+        # DFReader mantiene el archivo abierto internamente; cerrarlo
+        # explicitamente evita fugas de descriptor de archivo. Es
+        # especialmente importante en Windows, donde un archivo no se puede
+        # borrar (p.ej. limpiar un directorio temporal) mientras siga
+        # abierto por el proceso — a diferencia de Unix, que si lo permite.
+        mlog.close()
+
+    log.metadata["parsed_message_count"] = len(log.records) + len(log.events)
+    return log
+
+
+def _consume_messages(mlog, log: FlightLog) -> None:
+    """Recorre el flujo de mensajes del DFReader y rellena log.records / log.events."""
     # t0 se fija con el primer timestamp valido que encontramos, para que el
     # FlightLog resultante empiece siempre en tiempo relativo 0, sea cual sea
     # el instante de boot real del vehiculo.
@@ -167,9 +183,3 @@ def parse_ardupilot_log(file_path: str) -> FlightLog:
                     description=f"Evento de firmware id={getattr(msg, 'Id', '?')}",
                 )
             )
-
-    # Metadatos generales del vehiculo/firmware, si el log los trae en la
-    # cabecera (mensaje MSG suele contener la version de firmware como texto).
-    log.metadata["parsed_message_count"] = len(log.records) + len(log.events)
-
-    return log

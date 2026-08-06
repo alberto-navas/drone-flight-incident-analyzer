@@ -44,6 +44,8 @@ demostrar cómo se diseñaría el pipeline de un analizador de incidentes real.
 - **Panel de flota**: analiza varios logs a la vez — mapa con todas las rutas
   superpuestas, histograma de qué anomalía es más frecuente en el conjunto,
   tabla comparativa (`src/report/fleet.py`).
+- **Interfaz web**: subir el/los archivo(s) desde el navegador y ver el
+  informe directamente, sin usar la terminal (`src/web/`, FastAPI).
 
 **Sobre la detección por ML**: se entrena desde cero con cada vuelo (no hay un
 modelo compartido entre vuelos ni pre-entrenado), con semilla fija para que el
@@ -60,7 +62,10 @@ garantía de "cero falsos positivos", es una propiedad del algoritmo.
 ## Arquitectura
 
 ```
-log (.bin / .ulog / .BBL)
+log (.bin / .ulog / .BBL / .csv)
+        │
+        ▼
+   src/pipeline.py  (deteccion de formato, compartida por CLI y web)
         │
         ▼
    src/parsers/*  ──►  FlightLog (modelo de datos común)
@@ -78,6 +83,10 @@ log (.bin / .ulog / .BBL)
         ▼
    src/report/generator.py  ──►  informe HTML autocontenido (1 vuelo)
    src/report/fleet.py       ──►  panel comparativo (varios vuelos)
+        ▲
+        │
+   src/cli.py   (terminal)
+   src/web/     (navegador, FastAPI — misma logica, otra entrada)
 ```
 
 La pieza central del diseño es `FlightLog` / `FlightRecord` / `FlightEvent`
@@ -124,14 +133,29 @@ python -m src.cli data/samples/ardupilot/*.bin --output output/flota.html
 
 El informe se genera en `output/<nombre_del_log>.html` (o `output/fleet_report.html` en modo flota).
 
+### Interfaz web
+
+Para no depender de la terminal: sube el/los archivo(s) desde el navegador y
+el informe se muestra directamente, sin pasos intermedios.
+
+```bash
+python -m src.web
+```
+
+Abre `http://127.0.0.1:8000` en el navegador. Es una capa fina sobre el
+mismo pipeline que el CLI (`src/pipeline.py`, `src/analysis/*`,
+`src/report/*`); alcance reducido a propósito respecto al CLI — no incluye
+la sincronización con vídeo (necesita dos archivos correlacionados y un
+offset calibrado a mano, demasiado formulario para una primera versión).
+
 ## Tests
 
 ```bash
 pytest -v
 ```
 
-47 tests que cubren los siete módulos de `src/analysis/`, los cuatro
-parsers y el CLI de extremo a extremo, usando fixtures pequeños versionados en `tests/fixtures/` (un
+55 tests que cubren los siete módulos de `src/analysis/`, los cuatro
+parsers, el CLI y la interfaz web de extremo a extremo, usando fixtures pequeños versionados en `tests/fixtures/` (un
 recorte real de ArduPilot de 64 KB, un log real de PX4 de ~900 KB, y CSVs/SRT
 sintéticos) — no dependen de descargar nada externo, así que corren igual en
 local que en CI. Se ejecutan automáticamente en cada `push` vía GitHub

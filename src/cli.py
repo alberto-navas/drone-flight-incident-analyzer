@@ -19,60 +19,20 @@ from pathlib import Path
 from .analysis.anomalies import detect_anomalies
 from .analysis.ml_anomalies import detect_ml_anomalies
 from .analysis.video_sync import sync_events_with_video
-from .parsers.ardupilot import parse_ardupilot_log
-from .parsers.betaflight import decode_bbl_to_csv, parse_betaflight_csv
 from .parsers.base import FlightLog
 from .parsers.dji_srt import parse_dji_srt
-from .parsers.px4 import parse_px4_log
+from .pipeline import parse_log
 from .report.fleet import generate_fleet_report
 from .report.generator import generate_report
-
-# Mapea la extension del archivo al formato, para que el usuario no tenga
-# que especificar --format en el caso comun, ni siquiera al mezclar varios
-# formatos en modo flota. El unico formato CSV que esta herramienta sabe
-# leer es un Betaflight ya decodificado por blackbox_decode, asi que
-# mapear ".csv" directamente a "betaflight" no es ambiguo en la practica
-# (--format sigue disponible para forzarlo si algun dia hiciera falta).
-_EXTENSION_TO_FORMAT = {
-    ".bin": "ardupilot",
-    ".ulog": "px4",
-    ".bbl": "betaflight",
-    ".csv": "betaflight",
-}
-
-
-def _parse_log(input_path: Path, forced_format: str | None) -> FlightLog:
-    """Elige el parser correcto segun el formato (forzado o inferido por extension) y devuelve el FlightLog."""
-    fmt = forced_format or _EXTENSION_TO_FORMAT.get(input_path.suffix.lower())
-
-    if fmt is None:
-        raise SystemExit(
-            f"No se pudo inferir el formato a partir de la extension '{input_path.suffix}'. "
-            "Especifica --format {ardupilot|px4|betaflight} explicitamente."
-        )
-
-    if fmt == "ardupilot":
-        return parse_ardupilot_log(str(input_path))
-
-    if fmt == "px4":
-        return parse_px4_log(str(input_path))
-
-    if fmt == "betaflight":
-        if input_path.suffix.lower() == ".csv":
-            # El usuario ya nos da el CSV decodificado (p.ej. exportado a
-            # mano desde Blackbox Explorer): nos ahorramos depender de que
-            # blackbox_decode este instalado.
-            return parse_betaflight_csv(str(input_path))
-        csv_path = decode_bbl_to_csv(str(input_path), output_dir=str(input_path.parent))
-        return parse_betaflight_csv(csv_path, source_bbl_path=str(input_path))
-
-    raise SystemExit(f"Formato desconocido: {fmt}")
 
 
 def _parse_and_analyze(input_path: Path, forced_format: str | None) -> FlightLog:
     """Parsea un log y le corre encima la deteccion de anomalias (reglas + ML). Comun a los modos individual y flota."""
     print(f"Parseando {input_path}...")
-    flight_log = _parse_log(input_path, forced_format)
+    try:
+        flight_log = parse_log(input_path, forced_format)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
     print(f"  {len(flight_log.records)} muestras de telemetria, {len(flight_log.events)} eventos del firmware.")
 
     new_events = detect_anomalies(flight_log)

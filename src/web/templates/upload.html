@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Drone Flight Incident Analyzer</title>
+<style>
+  /* Mismo lenguaje visual que los informes generados (src/report/templates/), para que la app se sienta un solo producto. */
+  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; padding: 2rem; background: #f7f8fa; color: #1a202c; display: flex; justify-content: center; }
+  main { max-width: 640px; width: 100%; }
+  h1 { margin-bottom: 0.2rem; }
+  .subtitle { color: #718096; margin-top: 0; }
+  section { background: white; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  label { display: block; font-weight: 600; margin-bottom: 0.3rem; }
+  .hint { color: #718096; font-size: 0.85rem; margin: 0.2rem 0 1rem 0; }
+  input[type="file"] { width: 100%; padding: 0.6rem; border: 1px dashed #cbd5e0; border-radius: 6px; background: #f7f8fa; margin-bottom: 1rem; }
+  input[type="number"] { width: 100%; padding: 0.5rem; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 1rem; box-sizing: border-box; }
+  button { background: #2b6cb0; color: white; border: none; padding: 0.7rem 1.4rem; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; }
+  button:hover { background: #2c5282; }
+  button:disabled { background: #a0aec0; cursor: wait; }
+  .formats { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
+  .formats span { background: #e2e8f0; color: #4a5568; padding: 0.15rem 0.6rem; border-radius: 999px; font-size: 0.78rem; }
+  #status { margin-top: 1rem; color: #2b6cb0; font-size: 0.9rem; display: none; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Drone Flight Incident Analyzer</h1>
+  <p class="subtitle">Sube uno o varios logs de vuelo y genera el informe forense directamente aquí.</p>
+
+  <section>
+    <form id="analyze-form" action="/analyze" method="post" enctype="multipart/form-data">
+      <label for="files">Log(s) de vuelo</label>
+      <input type="file" id="files" name="files" multiple required>
+      <p class="hint">
+        Selecciona un archivo para un informe individual, o varios para un panel comparativo de flota.
+      </p>
+      <div class="formats">
+        <span>ArduPilot .bin</span>
+        <span>PX4 .ulog</span>
+        <span>Betaflight .BBL / .csv</span>
+      </div>
+
+      <label for="mass_kg" style="margin-top: 1.25rem;">Masa del vehículo en kg (opcional)</label>
+      <input type="number" id="mass_kg" name="mass_kg" step="0.1" min="0" placeholder="p. ej. 1.5">
+      <p class="hint">
+        Solo se usa si el vuelo termina en un descenso brusco: permite calcular la energía cinética estimada del
+        impacto. Solo aplica cuando subes un único archivo.
+      </p>
+
+      <button type="submit" id="submit-btn">Analizar</button>
+      <p id="status">Analizando… puede tardar unos segundos (el modelo de detección de anomalías se entrena en el momento).</p>
+    </form>
+  </section>
+</main>
+
+<script>
+  // Mejora minima de UX: como el analisis puede tardar unos segundos
+  // (sobre todo entrenar el modelo de ML), se avisa y se desactiva el
+  // boton para que no se envie el formulario dos veces por impaciencia.
+  document.getElementById('analyze-form').addEventListener('submit', function () {
+    document.getElementById('submit-btn').disabled = true;
+    document.getElementById('status').style.display = 'block';
+  });
+</script>
+</body>
+</html>
