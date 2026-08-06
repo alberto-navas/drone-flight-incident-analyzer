@@ -21,6 +21,13 @@
   .sev-critical { color: #c53030; font-weight: 600; }
   .sev-warning { color: #b7791f; font-weight: 600; }
   .sev-info { color: #2b6cb0; }
+  .impact-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+  .impact-grid .value { font-size: 1.2rem; font-weight: 600; }
+  .assumptions { background: #fffaf0; border: 1px solid #feebc8; border-radius: 6px; padding: 0.75rem 1rem; font-size: 0.85rem; color: #7b341e; }
+  .assumptions ul { margin: 0.3rem 0 0 1.1rem; padding: 0; }
+  .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600; }
+  .badge-clean { background: #c6f6d5; color: #22543d; }
+  .badge-dirty { background: #fed7d7; color: #822727; }
 </style>
 </head>
 <body>
@@ -44,12 +51,43 @@
 <section>
   <h2>Ruta de vuelo</h2>
   {{ map_html | safe }}
+  {% if impact %}
+  <p class="subtitle" style="margin-top:0.75rem;">La linea discontinua roja es el tramo EXTRAPOLADO tras el ultimo dato real del log — ver detalle en "Estimación de impacto" más abajo.</p>
+  {% endif %}
 </section>
 
 <section>
   <h2>Telemetria</h2>
   {{ timeline_html | safe }}
 </section>
+
+{% if impact %}
+<section>
+  <h2>Estimación de impacto</h2>
+  <p class="subtitle" style="margin-top:0;">
+    El log termina en t={{ "%.1f"|format(impact.last_known_timestamp) }}s en pleno descenso, antes de tocar
+    el suelo. Lo siguiente es una PROYECCIÓN física a partir de esa última trayectoria conocida, no un dato
+    registrado por el dron.
+  </p>
+  <div class="impact-grid">
+    <div class="card"><div class="label">Tiempo hasta el impacto</div><div class="value">{{ "%.1f"|format(impact.time_to_impact_s) }} s</div></div>
+    <div class="card"><div class="label">Posición estimada</div><div class="value">{{ "%.5f"|format(impact.lat) }}, {{ "%.5f"|format(impact.lon) }}</div></div>
+    <div class="card"><div class="label">Velocidad vertical al impacto</div><div class="value">{{ "%.1f"|format(impact.vertical_speed_at_impact_ms) }} m/s</div></div>
+    <div class="card"><div class="label">Velocidad total al impacto</div><div class="value">{{ "%.1f"|format(impact.total_speed_at_impact_ms) }} m/s</div></div>
+    {% if impact.kinetic_energy_j is not none %}
+    <div class="card"><div class="label">Energía cinética estimada</div><div class="value">{{ "%.0f"|format(impact.kinetic_energy_j) }} J</div></div>
+    {% endif %}
+  </div>
+  <div class="assumptions">
+    <strong>Asunciones de esta estimación (léase antes de citar estos números):</strong>
+    <ul>
+    {% for assumption in impact.assumptions %}
+      <li>{{ assumption }}</li>
+    {% endfor %}
+    </ul>
+  </div>
+</section>
+{% endif %}
 
 <section>
   <h2>Linea de tiempo de eventos</h2>
@@ -68,6 +106,32 @@
     {% endfor %}
     </tbody>
   </table>
+</section>
+
+<section>
+  <h2>Verificación de integridad
+    {% if integrity.looks_clean %}
+      <span class="badge badge-clean">sin indicios</span>
+    {% else %}
+      <span class="badge badge-dirty">{{ integrity.findings|length }} indicio(s)</span>
+    {% endif %}
+  </h2>
+  <p class="subtitle" style="margin-top:0;">{{ integrity.summary }}</p>
+  {% if integrity.findings %}
+  <table>
+    <thead><tr><th>Tiempo (s)</th><th>Severidad</th><th>Tipo</th><th>Descripción</th></tr></thead>
+    <tbody>
+    {% for finding in integrity.findings %}
+      <tr>
+        <td>{{ "%.1f"|format(finding.timestamp) }}</td>
+        <td class="sev-{{ finding.severity }}">{{ finding.severity }}</td>
+        <td>{{ finding.kind }}{% if finding.field %} ({{ finding.field }}){% endif %}</td>
+        <td>{{ finding.description }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
 </section>
 
 </body>

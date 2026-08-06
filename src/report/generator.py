@@ -13,6 +13,8 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from ..analysis.geo import haversine_distance_m
+from ..analysis.impact import estimate_impact
+from ..analysis.integrity import check_integrity
 from ..analysis.trajectory import build_route_map, build_telemetry_timeline
 from ..parsers.base import FlightLog
 
@@ -53,7 +55,7 @@ def _compute_summary(flight_log: FlightLog) -> dict:
     }
 
 
-def generate_report(flight_log: FlightLog, output_path: str) -> str:
+def generate_report(flight_log: FlightLog, output_path: str, mass_kg: float | None = None) -> str:
     """
     Genera el informe HTML de un FlightLog ya parseado (y, idealmente, ya pasado por detect_anomalies).
 
@@ -61,8 +63,15 @@ def generate_report(flight_log: FlightLog, output_path: str) -> str:
     a proposito: el CLI decide explicitamente cuando correr la deteccion de
     anomalias, para que este modulo se limite a presentar lo que ya se
     calculo, sin efectos secundarios ocultos.
+
+    `mass_kg` es opcional y solo se usa para estimar la energia cinetica de
+    impacto (ver src/analysis/impact.py): sin ella, la estimacion de impacto
+    se sigue calculando (posicion, velocidad) pero sin energia.
     """
-    route_map = build_route_map(flight_log)
+    impact = estimate_impact(flight_log, mass_kg=mass_kg)
+    integrity = check_integrity(flight_log)
+
+    route_map = build_route_map(flight_log, impact_estimate=impact)
     timeline_fig = build_telemetry_timeline(flight_log)
 
     # _repr_html_() de folium ya devuelve un <iframe srcdoc="..."> autonomo,
@@ -86,6 +95,8 @@ def generate_report(flight_log: FlightLog, output_path: str) -> str:
         events=sorted(flight_log.events, key=lambda e: e.timestamp),
         map_html=map_html,
         timeline_html=timeline_html,
+        impact=impact,
+        integrity=integrity,
         generated_at=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
     )
 

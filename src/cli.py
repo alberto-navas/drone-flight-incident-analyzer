@@ -73,6 +73,12 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="Ruta del informe HTML de salida. Por defecto: output/<nombre_del_log>.html",
     )
+    parser.add_argument(
+        "--mass-kg",
+        type=float,
+        default=None,
+        help="Masa estimada del vehiculo en kg, usada solo para calcular la energia cinetica de impacto (opcional).",
+    )
     args = parser.parse_args(argv)
 
     if not args.input.exists():
@@ -89,7 +95,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  {len(new_events)} anomalias adicionales detectadas.")
 
     print(f"Generando informe en {output_path}...")
-    generate_report(flight_log, str(output_path))
+    generate_report(flight_log, str(output_path), mass_kg=args.mass_kg)
 
     print("Listo.")
     return 0
