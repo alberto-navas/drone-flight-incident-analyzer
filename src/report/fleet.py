@@ -74,8 +74,55 @@ def _summarize_flight(flight_log: FlightLog, color: str) -> FlightSummary:
     )
 
 
+def _build_legend_html(flight_logs: list[FlightLog], colors: list[str]) -> str:
+    """
+    Construye una leyenda HTML fija, superpuesta al mapa (esquina inferior izquierda).
+
+    Sin esto, el color de cada ruta y el significado del punto solo se ven
+    pasando el raton por encima (tooltip de Leaflet), lo cual no es
+    descubrible a simple vista. La leyenda tambien explica explicitamente
+    que vuelos NO aparecen dibujados porque su log no trae GPS, en vez de
+    dejar que parezca que faltan por error.
+    """
+    entries, missing_gps = [], []
+    for flight_log, color in zip(flight_logs, colors):
+        name = Path(flight_log.source_file).name
+        has_gps = any(r.lat is not None and r.lon is not None for r in flight_log.records)
+        if has_gps:
+            entries.append((name, color))
+        else:
+            missing_gps.append(name)
+
+    rows_html = "".join(
+        f'<div style="margin-bottom:4px;">'
+        f'<span style="display:inline-block;width:12px;height:12px;border-radius:50%;'
+        f'background:{color};margin-right:6px;vertical-align:middle;"></span>{name}</div>'
+        for name, color in entries
+    ) or '<div style="color:#718096;">Ningún vuelo del conjunto trae GPS.</div>'
+
+    missing_html = ""
+    if missing_gps:
+        missing_html = (
+            '<div style="margin-top:6px;padding-top:6px;border-top:1px solid #e2e8f0;'
+            'font-size:0.75rem;color:#718096;">Sin GPS en el log (no aparecen en el mapa): '
+            + ", ".join(missing_gps) + "</div>"
+        )
+
+    return f"""
+    <div style="position:fixed;bottom:20px;left:20px;z-index:9999;background:white;
+                padding:10px 14px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.25);
+                font-family:-apple-system,Segoe UI,Roboto,sans-serif;font-size:0.85rem;color:#1a202c;
+                max-width:260px;">
+      <div style="font-weight:600;margin-bottom:6px;">Vuelos</div>
+      {rows_html}
+      <div style="margin-top:6px;font-size:0.75rem;color:#718096;">● = punto de inicio del vuelo</div>
+      {missing_html}
+    </div>
+    """
+
+
 def _build_combined_map(flight_logs: list[FlightLog], colors: list[str]) -> folium.Map:
-    """Superpone la ruta de cada vuelo en un unico mapa, un color fijo por vuelo."""
+    """Superpone la ruta de cada vuelo en un unico mapa, un color fijo por vuelo, con leyenda."""
     all_points = []
     for flight_log in flight_logs:
         records = flight_log.sorted_records()
@@ -94,6 +141,7 @@ def _build_combined_map(flight_logs: list[FlightLog], colors: list[str]) -> foli
         folium.PolyLine(points, color=color, weight=3, opacity=0.8, tooltip=name).add_to(fmap)
         folium.CircleMarker(points[0], radius=6, color=color, fill=True, fill_opacity=1, tooltip=f"Inicio — {name}").add_to(fmap)
 
+    fmap.get_root().html.add_child(folium.Element(_build_legend_html(flight_logs, colors)))
     return fmap
 
 

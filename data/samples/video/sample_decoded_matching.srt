@@ -1,0 +1,35 @@
+1
+00:00:00,000 --> 00:00:00,050
+<font size="28">SrtCnt : 1, DiffTime : 100ms
+2024-06-01 10:00:00,000
+[iso : 100] [shutter : 1/1000.0] [fnum : 2.8] [ev : 0] [latitude: 47.376900] [longitude: 8.541700] [rel_alt: 45.000 abs_alt: 545.000] </font>
+
+2
+00:00:00,950 --> 00:00:01,050
+<font size="28">SrtCnt : 2, DiffTime : 100ms
+2024-06-01 10:00:01,000
+[iso : 100] [shutter : 1/1000.0] [fnum : 2.8] [ev : 0] [latitude: 47.376950] [longitude: 8.541750] [rel_alt: 45.000 abs_alt: 545.000] </font>
+
+3
+00:00:01,950 --> 00:00:02,050
+<font size="28">SrtCnt : 3, DiffTime : 100ms
+2024-06-01 10:00:02,000
+[iso : 100] [shutter : 1/1000.0] [fnum : 2.8] [ev : 0] [latitude: 47.377000] [longitude: 8.541800] [rel_alt: 45.000 abs_alt: 545.000] </font>
+
+4
+00:00:02,950 --> 00:00:03,050
+<font size="28">SrtCnt : 4, DiffTime : 100ms
+2024-06-01 10:00:03,000
+[iso : 100] [shutter : 1/1000.0] [fnum : 2.8] [ev : 0] [latitude: 47.377050] [longitude: 8.541850] [rel_alt: 30.000 abs_alt: 530.000] </font>
+
+5
+00:00:03,450 --> 00:00:03,550
+<font size="28">SrtCnt : 5, DiffTime : 100ms
+2024-06-01 10:00:03,000
+[iso : 100] [shutter : 1/1000.0] [fnum : 2.8] [ev : 0] [latitude: 47.377075] [longitude: 8.541875] [rel_alt: 15.000 abs_alt: 515.000] </font>
+
+6
+00:00:03,850 --> 00:00:03,950
+<font size="28">SrtCnt : 6, DiffTime : 100ms
+2024-06-01 10:00:03,000
+[iso : 100] [shutter : 1/1000.0] [fnum : 2.8] [ev : 0] [latitude: 47.377095] [longitude: 8.541895] [rel_alt: 3.000 abs_alt: 503.000] </font>
