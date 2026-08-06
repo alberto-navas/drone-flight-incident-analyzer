@@ -20,6 +20,9 @@ from pathlib import Path
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 from ..analysis.anomalies import detect_anomalies
 from ..analysis.ml_anomalies import detect_ml_anomalies
@@ -37,7 +40,19 @@ _TEMPLATES_DIR = Path(__file__).parent / "templates"
 # que acepte archivos).
 _MAX_UPLOAD_SIZE_BYTES = 50 * 1024 * 1024
 
+# Limite de peticiones por IP a /analyze: es el endpoint caro (entrena un
+# modelo de ML por peticion), y esta app corre en el plan gratuito de
+# Render — sin limite, cualquiera podria dejarlo sin recursos con un bucle
+# de peticiones. 20/minuto es generoso para un uso normal (probar varios
+# archivos seguidos) pero corta un abuso automatizado.
+_ANALYZE_RATE_LIMIT = "20/minute"
+
+limiter = Limiter(key_func=get_remote_address)
+
 app = FastAPI(title="Drone Flight Incident Analyzer")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 _templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
 
 
@@ -80,7 +95,9 @@ async def upload_form(request: Request):
 
 
 @app.post("/analyze", response_class=HTMLResponse)
+@limiter.limit(_ANALYZE_RATE_LIMIT)
 async def analyze(
+    request: Request,  # requerido por @limiter.limit para identificar al cliente (IP), no se usa directamente aqui
     files: list[UploadFile] = File(...),  # noqa: B008 — patron estandar de FastAPI, no una llamada real en cada request
     mass_kg: float | None = Form(None),
 ):

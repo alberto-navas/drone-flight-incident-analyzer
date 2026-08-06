@@ -5,7 +5,7 @@ Tests de la interfaz web (src/web/app.py), usando el TestClient de FastAPI
 
 from fastapi.testclient import TestClient
 
-from src.web.app import app
+from src.web.app import app, limiter
 
 client = TestClient(app)
 
@@ -94,3 +94,29 @@ def test_analyze_path_traversal_filename_is_sanitized():
     detail = response.json()["detail"]
     assert "passwd.bin" in detail
     assert "etc/passwd" not in detail
+
+
+def test_analyze_is_rate_limited_per_ip():
+    """
+    /analyze es el endpoint caro (entrena un modelo de ML por peticion) en
+    un servicio de plan gratuito: sin limite, cualquiera podria dejarlo sin
+    recursos con un bucle de peticiones. limiter.reset() aisla este test de
+    la cuota que ya hayan consumido los demas tests de este archivo (todas
+    las peticiones de TestClient comparten la misma IP simulada).
+    """
+    limiter.reset()
+    try:
+        with open("tests/fixtures/mini_ardupilot.bin", "rb") as f:
+            content = f.read()
+
+        statuses = [
+            client.post(
+                "/analyze", files={"files": ("mini_ardupilot.bin", content, "application/octet-stream")}
+            ).status_code
+            for _ in range(25)
+        ]
+
+        assert statuses.count(200) == 20  # el limite configurado, ver _ANALYZE_RATE_LIMIT en app.py
+        assert statuses.count(429) == 5
+    finally:
+        limiter.reset()  # no dejar la cuota consumida para tests que se ejecuten despues

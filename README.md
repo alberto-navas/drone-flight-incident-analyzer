@@ -161,6 +161,11 @@ mismo pipeline que el CLI (`src/pipeline.py`, `src/analysis/*`,
 la sincronización con vídeo (necesita dos archivos correlacionados y un
 offset calibrado a mano, demasiado formulario para una primera versión).
 
+**Límite de peticiones**: `/analyze` (el endpoint caro — entrena un modelo
+de ML por petición) está limitado a 20 peticiones/minuto por IP (`slowapi`),
+para que el plan gratuito de Render no se quede sin recursos si alguien lo
+satura. Pasado el límite, responde `429` en vez de degradarse o caerse.
+
 **Desplegado en [Render](https://render.com)** (plan gratuito) vía `render.yaml`:
 **https://drone-flight-incident-analyzer.onrender.com**. Sin estado
 persistente que gestionar (cada análisis se procesa en un directorio
@@ -175,7 +180,7 @@ detecta `render.yaml` solo.
 pytest -v
 ```
 
-63 tests que cubren los siete módulos de `src/analysis/`, los cuatro
+64 tests que cubren los siete módulos de `src/analysis/`, los cuatro
 parsers, el CLI, la interfaz web y casos de entrada malformada de extremo a
 extremo, usando fixtures pequeños versionados en `tests/fixtures/` (un
 recorte real de ArduPilot de 64 KB, un log real de PX4 de ~900 KB, CSVs/SRT
