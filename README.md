@@ -157,6 +157,13 @@ mismo pipeline que el CLI (`src/pipeline.py`, `src/analysis/*`,
 la sincronización con vídeo (necesita dos archivos correlacionados y un
 offset calibrado a mano, demasiado formulario para una primera versión).
 
+**Despliegue**: el repo incluye `render.yaml`, listo para desplegar en
+[Render](https://render.com) (plan gratuito) conectando este repositorio de
+GitHub — "New +" → "Blueprint" → seleccionar el repo, Render detecta
+`render.yaml` solo. No hay estado persistente que gestionar (cada análisis
+se procesa en un directorio temporal que se borra al terminar la petición),
+así que no hace falta configurar ninguna base de datos ni disco.
+
 ## Tests
 
 ```bash
