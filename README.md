@@ -2,6 +2,9 @@
 
 ![Tests](https://github.com/alberto-navas/drone-flight-incident-analyzer/actions/workflows/tests.yml/badge.svg)
 
+**Demo en vivo: [drone-flight-incident-analyzer.onrender.com](https://drone-flight-incident-analyzer.onrender.com)**
+(plan gratuito: si lleva un rato dormido, la primera carga tarda ~30-50s)
+
 Herramienta de análisis forense de logs de vuelo de drones. Ingiere logs de
 telemetría en los tres formatos abiertos más usados en autopilotos reales
 (**ArduPilot** `.bin`, **PX4** `.ulog`, **Betaflight** blackbox `.BBL`/CSV),
@@ -157,12 +160,13 @@ mismo pipeline que el CLI (`src/pipeline.py`, `src/analysis/*`,
 la sincronización con vídeo (necesita dos archivos correlacionados y un
 offset calibrado a mano, demasiado formulario para una primera versión).
 
-**Despliegue**: el repo incluye `render.yaml`, listo para desplegar en
-[Render](https://render.com) (plan gratuito) conectando este repositorio de
-GitHub — "New +" → "Blueprint" → seleccionar el repo, Render detecta
-`render.yaml` solo. No hay estado persistente que gestionar (cada análisis
-se procesa en un directorio temporal que se borra al terminar la petición),
-así que no hace falta configurar ninguna base de datos ni disco.
+**Desplegado en [Render](https://render.com)** (plan gratuito) vía `render.yaml`:
+**https://drone-flight-incident-analyzer.onrender.com**. Sin estado
+persistente que gestionar (cada análisis se procesa en un directorio
+temporal que se borra al terminar la petición), así que no hace falta
+ninguna base de datos ni disco. Para volver a desplegarlo desde cero:
+"New +" → "Blueprint" en Render → seleccionar este repositorio → Render
+detecta `render.yaml` solo.
 
 ## Tests
 
