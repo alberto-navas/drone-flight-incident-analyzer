@@ -5,3 +5,4 @@ folium>=0.16.0        # mapas interactivos (Leaflet) para la trayectoria de vuel
 plotly>=5.20.0        # graficos interactivos de altitud/velocidad/bateria
 jinja2>=3.1.0          # plantillas para el informe HTML final
 srt>=3.5.3            # parseo de subtitulos SRT (telemetria embebida en video DJI)
+scikit-learn>=1.4.0    # deteccion de anomalias no supervisada (Isolation Forest)

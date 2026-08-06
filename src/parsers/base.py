@@ -52,17 +52,24 @@ class FlightEvent:
     """
     Un suceso puntual del vuelo, distinto de una muestra continua de telemetria.
 
-    Se generan en dos sitios: (1) durante el parseo, para eventos que el
+    Se generan en tres sitios: (1) durante el parseo, para eventos que el
     propio firmware marca explicitamente en el log (cambio de modo,
-    failsafe armado por el autopiloto); y (2) en src/analysis/anomalies.py,
-    donde se derivan por reglas sobre la serie temporal (p.ej. caida brusca
-    de altitud = posible impacto).
+    failsafe armado por el autopiloto); (2) en src/analysis/anomalies.py,
+    por reglas explicitas sobre la serie temporal (p.ej. caida brusca de
+    altitud = posible impacto); y (3) en src/analysis/ml_anomalies.py, por
+    un modelo estadistico (Isolation Forest) que aprende que es "normal"
+    para este vuelo en concreto y señala lo que se sale de ese patron.
     """
 
     timestamp: float
-    category: str  # "rc_loss" | "battery_critical" | "gps_glitch" | "mode_change" | "possible_impact" | ...
+    category: str  # "rc_loss" | "battery_critical" | "gps_glitch" | "mode_change" | "possible_impact" | "ml_anomaly_*" | ...
     severity: str  # "info" | "warning" | "critical"
     description: str
+    # "rule" (regla explicita, incluye los que vienen del propio firmware) o
+    # "ml" (modelo estadistico). Sirve para que el informe distinga
+    # visualmente un hallazgo justificable por una regla concreta de uno
+    # detectado por patron estadistico, que merece mas escrutinio humano.
+    method: str = "rule"
 
 
 @dataclass

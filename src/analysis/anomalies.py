@@ -47,8 +47,16 @@ _LOW_RC_SIGNAL_THRESHOLD = 15.0
 # la condicion se mantiene generarian un evento casi identico por muestra.
 _EPISODE_MERGE_GAP_SECONDS = 1.0
 
+# Orden de severidad, usado para quedarse con la PEOR severidad presente al
+# fusionar un episodio (ver consolidate_episodes). En los detectores de
+# anomalies.py todos los miembros de un episodio comparten severidad, asi
+# que esto no cambia nada ahi; pero en ml_anomalies.py un mismo episodio
+# puede mezclar puntos "warning" y un unico punto "critical" (el mas
+# anomalo del vuelo), y descartar ese matiz seria perder informacion.
+_SEVERITY_RANK = {"info": 0, "warning": 1, "critical": 2}
 
-def _consolidate_episodes(events: list[FlightEvent]) -> list[FlightEvent]:
+
+def consolidate_episodes(events: list[FlightEvent]) -> list[FlightEvent]:
     """
     Fusiona eventos consecutivos de la misma categoria en un unico episodio.
 
@@ -74,15 +82,17 @@ def _consolidate_episodes(events: list[FlightEvent]) -> list[FlightEvent]:
         if len(episode) == 1:
             merged.append(first)
             continue
+        worst_severity = max((e.severity for e in episode), key=lambda s: _SEVERITY_RANK[s])
         merged.append(
             FlightEvent(
                 timestamp=first.timestamp,
                 category=first.category,
-                severity=first.severity,
+                severity=worst_severity,
                 description=(
                     f"{first.description} — sostenido durante "
                     f"{last.timestamp - first.timestamp:.1f}s ({len(episode)} muestras)"
                 ),
+                method=first.method,
             )
         )
     return merged
@@ -119,7 +129,7 @@ def detect_gps_glitches(flight_log: FlightLog) -> list[FlightEvent]:
                     ),
                 )
             )
-    return _consolidate_episodes(events)
+    return consolidate_episodes(events)
 
 
 def detect_rapid_descents(flight_log: FlightLog) -> list[FlightEvent]:
@@ -151,7 +161,7 @@ def detect_rapid_descents(flight_log: FlightLog) -> list[FlightEvent]:
                     ),
                 )
             )
-    return _consolidate_episodes(events)
+    return consolidate_episodes(events)
 
 
 def detect_battery_anomalies(flight_log: FlightLog) -> list[FlightEvent]:

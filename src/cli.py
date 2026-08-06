@@ -17,6 +17,7 @@ import sys
 from pathlib import Path
 
 from .analysis.anomalies import detect_anomalies
+from .analysis.ml_anomalies import detect_ml_anomalies
 from .analysis.video_sync import sync_events_with_video
 from .parsers.ardupilot import parse_ardupilot_log
 from .parsers.betaflight import decode_bbl_to_csv, parse_betaflight_csv
@@ -66,13 +67,21 @@ def _parse_log(input_path: Path, forced_format: str | None) -> FlightLog:
 
 
 def _parse_and_analyze(input_path: Path, forced_format: str | None) -> FlightLog:
-    """Parsea un log y le corre la deteccion de anomalias encima. Comun a los modos individual y flota."""
+    """Parsea un log y le corre encima la deteccion de anomalias (reglas + ML). Comun a los modos individual y flota."""
     print(f"Parseando {input_path}...")
     flight_log = _parse_log(input_path, forced_format)
     print(f"  {len(flight_log.records)} muestras de telemetria, {len(flight_log.events)} eventos del firmware.")
 
     new_events = detect_anomalies(flight_log)
-    print(f"  {len(new_events)} anomalias adicionales detectadas.")
+    print(f"  {len(new_events)} anomalias adicionales detectadas por reglas.")
+
+    ml_events = detect_ml_anomalies(flight_log)
+    flight_log.events.extend(ml_events)
+    if ml_events:
+        print(f"  {len(ml_events)} anomalias adicionales detectadas por Isolation Forest (ML).")
+    else:
+        print("  Sin anomalias ML: datos insuficientes para este vuelo, o ninguna encontrada.")
+
     return flight_log
 
 

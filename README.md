@@ -23,6 +23,11 @@ demostrar cómo se diseñaría el pipeline de un analizador de incidentes real.
 - **Parseo multi-formato**: ArduPilot, PX4, Betaflight → un modelo de datos común.
 - **Detección de anomalías por reglas explicables**: glitches de GPS, descensos
   bruscos, caídas de batería, pérdida de señal RC (`src/analysis/anomalies.py`).
+- **Detección de anomalías por machine learning**: un Isolation Forest entrenado
+  solo con los datos de ESTE vuelo señala patrones estadísticamente raros que
+  ninguna regla predefinida cubre (p. ej. una combinación anómala de actitud +
+  velocidad). Cada hallazgo indica qué magnitud concreta se desvió más, para no
+  ser una caja negra (`src/analysis/ml_anomalies.py`).
 - **Estimación de impacto**: cuando el log se corta en pleno descenso (el caso
   típico: el dron pierde alimentación al chocar), proyecta con cinemática
   básica dónde y a qué velocidad probablemente impactó, con sus asunciones
@@ -38,6 +43,15 @@ demostrar cómo se diseñaría el pipeline de un analizador de incidentes real.
   superpuestas, histograma de qué anomalía es más frecuente en el conjunto,
   tabla comparativa (`src/report/fleet.py`).
 
+**Sobre la detección por ML**: se entrena desde cero con cada vuelo (no hay un
+modelo compartido entre vuelos ni pre-entrenado), con semilla fija para que el
+mismo log dé siempre el mismo resultado. Necesita un mínimo de ~20 muestras
+remuestreadas y al menos 2 magnitudes numéricas presentes en el log para
+producir algo fiable; si no los hay, no da resultado en vez de forzar uno poco
+fiable. En el informe, cada hallazgo lleva una etiqueta "ML" (frente a "regla")
+para dejar claro que es un patrón estadístico, no un umbral justificable, y
+merece más revisión humana.
+
 ## Arquitectura
 
 ```
@@ -47,7 +61,8 @@ log (.bin / .ulog / .BBL)
    src/parsers/*  ──►  FlightLog (modelo de datos común)
         │                 │
         │                 ▼
-        │          src/analysis/anomalies.py   (detección de eventos por reglas)
+        │          src/analysis/anomalies.py    (detección de eventos por reglas)
+        │          src/analysis/ml_anomalies.py (detección por Isolation Forest)
         │          src/analysis/impact.py       (estimación de impacto)
         │          src/analysis/integrity.py    (indicios de manipulación)
         │          src/analysis/video_sync.py   (cruce con vídeo DJI, opcional)

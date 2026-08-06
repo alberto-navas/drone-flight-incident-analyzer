@@ -28,6 +28,8 @@
   .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600; }
   .badge-clean { background: #c6f6d5; color: #22543d; }
   .badge-dirty { background: #fed7d7; color: #822727; }
+  .badge-ml { background: #e9d8fd; color: #553c9a; }
+  .badge-rule { background: #e2e8f0; color: #4a5568; }
 </style>
 </head>
 <body>
@@ -92,20 +94,25 @@
 <section>
   <h2>Linea de tiempo de eventos</h2>
   <table>
-    <thead><tr><th>Tiempo (s)</th><th>Severidad</th><th>Categoria</th><th>Descripcion</th></tr></thead>
+    <thead><tr><th>Tiempo (s)</th><th>Severidad</th><th>Origen</th><th>Categoria</th><th>Descripcion</th></tr></thead>
     <tbody>
     {% for event in events %}
       <tr>
         <td>{{ "%.1f"|format(event.timestamp) }}</td>
         <td class="sev-{{ event.severity }}">{{ event.severity }}</td>
+        <td>{% if event.method == "ml" %}<span class="badge badge-ml" title="Detectado por Isolation Forest, no por una regla explicita">ML</span>{% else %}<span class="badge badge-rule">regla</span>{% endif %}</td>
         <td>{{ event.category }}</td>
         <td>{{ event.description }}</td>
       </tr>
     {% else %}
-      <tr><td colspan="4">No se detectaron eventos.</td></tr>
+      <tr><td colspan="5">No se detectaron eventos.</td></tr>
     {% endfor %}
     </tbody>
   </table>
+  <p class="subtitle" style="margin-top:0.5rem;">
+    "regla" = detectado por un umbral explicable (ver código); "ML" = patrón estadísticamente anómalo detectado por
+    un modelo entrenado solo con este vuelo — merece más revisión humana antes de sacar conclusiones.
+  </p>
 </section>
 
 {% if synced_events %}
