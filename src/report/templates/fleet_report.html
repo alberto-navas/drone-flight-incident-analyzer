@@ -4,63 +4,100 @@
 <meta charset="UTF-8">
 <title>Panel de flota — {{ flight_count }} vuelos analizados</title>
 <style>
-  /* Mismo lenguaje visual que report.html, para que ambos informes se sientan parte del mismo producto. */
-  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; padding: 2rem; background: #f7f8fa; color: #1a202c; }
-  h1 { margin-bottom: 0.2rem; }
-  .subtitle { color: #718096; margin-top: 0; }
-  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
-  .card { background: white; border-radius: 8px; padding: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-  .card .label { font-size: 0.75rem; text-transform: uppercase; color: #718096; }
-  .card .value { font-size: 1.4rem; font-weight: 600; }
-  section { background: white; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-  section h2 { margin-top: 0; }
-  iframe { width: 100%; height: 500px; border: none; border-radius: 4px; }
-  table { width: 100%; border-collapse: collapse; }
-  th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; }
-  .sev-critical { color: #c53030; font-weight: 600; }
-  .sev-warning { color: #b7791f; font-weight: 600; }
-  .swatch { display: inline-block; width: 0.8rem; height: 0.8rem; border-radius: 50%; margin-right: 0.4rem; vertical-align: middle; }
-  .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.78rem; font-weight: 600; }
-  .badge-clean { background: #c6f6d5; color: #22543d; }
-  .badge-dirty { background: #fed7d7; color: #822727; }
-  .badge-neutral { background: #e2e8f0; color: #4a5568; }
+  /* Mismo sistema de diseño que report.html (ver comentario alli): paleta
+     anclada en el naranja internacional de "caja negra" para lo critico,
+     tipografia monoespaciada para cabeceras/datos. */
+  :root {
+    --bg: #eef1f5; --surface: #ffffff; --surface-alt: #f4f6f9;
+    --ink: #101828; --muted: #5d6b82; --border: #dde3ea;
+    --accent: #1b4965; --critical: #c1272d; --warning: #d9822b; --clean: #2f855a;
+    --font-mono: ui-monospace, "Cascadia Code", "SF Mono", Consolas, "Roboto Mono", monospace;
+    --font-sans: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0b0f14; --surface:#131a22; --surface-alt:#0f151c; --ink:#e6ebf0; --muted:#93a1b4; --border:#263241; --accent:#6fb3d9; --critical:#ff6b6b; --warning:#f0a34e; --clean:#55c98a; }
+  }
+  :root[data-theme="dark"] { --bg:#0b0f14; --surface:#131a22; --surface-alt:#0f151c; --ink:#e6ebf0; --muted:#93a1b4; --border:#263241; --accent:#6fb3d9; --critical:#ff6b6b; --warning:#f0a34e; --clean:#55c98a; }
+  :root[data-theme="light"] { --bg:#eef1f5; --surface:#ffffff; --surface-alt:#f4f6f9; --ink:#101828; --muted:#5d6b82; --border:#dde3ea; --accent:#1b4965; --critical:#c1272d; --warning:#d9822b; --clean:#2f855a; }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 2.5rem 1.25rem; background: var(--bg); color: var(--ink); font-family: var(--font-sans); }
+  .page { max-width: 960px; margin: 0 auto; }
+  h1 { margin: 0 0 0.35rem 0; font-size: 1.6rem; font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
+  .meta { color: var(--muted); margin: 0 0 1.75rem 0; font-size: 0.92rem; }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 1.25rem; }
+  .stat { background: var(--surface); padding: 0.95rem 1.1rem; }
+  .stat .label { font-family: var(--font-mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+  .stat .value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1.4rem; font-weight: 600; margin-top: 0.3rem; }
+  .stat.stat-critical .value { color: var(--critical); }
+  .stat.stat-warning .value { color: var(--warning); }
+
+  section { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem 1.4rem; margin-bottom: 1.25rem; }
+  section h2 { margin: 0 0 0.9rem 0; font-size: 1.05rem; font-weight: 700; display: flex; align-items: baseline; gap: 0.6rem; }
+  .sec-num { font-family: var(--font-mono); font-size: 0.82rem; color: var(--accent); font-weight: 600; }
+  .figure { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .figure iframe { display: block; width: 100%; height: 500px; border: none; }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.87rem; }
+  thead th { text-align: left; font-family: var(--font-mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); padding: 0.5rem 0.6rem; border-bottom: 2px solid var(--border); white-space: nowrap; }
+  tbody td { padding: 0.55rem 0.6rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tbody tr:hover { background: var(--surface-alt); }
+  td.num, th.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .sev-critical { color: var(--critical); font-weight: 600; }
+  .sev-warning { color: var(--warning); font-weight: 600; }
+
+  .swatch { display: inline-block; width: 0.75rem; height: 0.75rem; border-radius: 2px; vertical-align: middle; }
+  .tag { display: inline-flex; align-items: center; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.2rem 0.55rem; border-radius: 4px; border: 1px solid; }
+  .tag-clean    { background: #e7f5ec; color: var(--clean); border-color: #bfe3cd; }
+  .tag-critical { background: #fbe9e7; color: var(--critical); border-color: #f2c4bd; }
+  .tag-neutral  { background: var(--surface-alt); color: var(--muted); border-color: var(--border); }
+  @media (prefers-color-scheme: dark) {
+    .tag-clean { background: #123322; border-color: #1f4d34; }
+    .tag-critical { background: #3a1712; border-color: #5c231b; }
+  }
+  :root[data-theme="dark"] .tag-clean { background: #123322; border-color: #1f4d34; }
+  :root[data-theme="dark"] .tag-critical { background: #3a1712; border-color: #5c231b; }
 </style>
 </head>
 <body>
+<div class="page">
 
 <h1>Panel de flota — análisis comparativo</h1>
-<p class="subtitle">Generado el {{ generated_at }} · {{ flight_count }} vuelos analizados conjuntamente</p>
+<p class="meta">Generado el {{ generated_at }} · {{ flight_count }} vuelos analizados conjuntamente</p>
 
-<div class="summary-grid">
-  <div class="card"><div class="label">Vuelos analizados</div><div class="value">{{ flight_count }}</div></div>
-  <div class="card"><div class="label">Eventos críticos (total)</div><div class="value sev-critical">{{ total_critical }}</div></div>
-  <div class="card"><div class="label">Advertencias (total)</div><div class="value sev-warning">{{ total_warning }}</div></div>
-  <div class="card"><div class="label">Vuelos con posible impacto</div><div class="value">{{ flights_with_impact }}</div></div>
-  <div class="card"><div class="label">Vuelos con indicios de integridad</div><div class="value">{{ flights_with_integrity_issues }}</div></div>
+<div class="stat-grid">
+  <div class="stat"><div class="label">Vuelos analizados</div><div class="value">{{ flight_count }}</div></div>
+  <div class="stat stat-critical"><div class="label">Eventos críticos (total)</div><div class="value">{{ total_critical }}</div></div>
+  <div class="stat stat-warning"><div class="label">Advertencias (total)</div><div class="value">{{ total_warning }}</div></div>
+  <div class="stat"><div class="label">Vuelos con posible impacto</div><div class="value">{{ flights_with_impact }}</div></div>
+  <div class="stat"><div class="label">Vuelos con indicios de integridad</div><div class="value">{{ flights_with_integrity_issues }}</div></div>
 </div>
 
 <section>
-  <h2>Rutas combinadas</h2>
-  {{ map_html | safe }}
+  <h2><span class="sec-num">01</span>Rutas combinadas</h2>
+  <div class="figure">{{ map_html | safe }}</div>
 </section>
 
 <section>
-  <h2>Patrones de fallo en el conjunto</h2>
-  {{ histogram_html | safe }}
+  <h2><span class="sec-num">02</span>Patrones de fallo en el conjunto</h2>
+  <div class="figure">{{ histogram_html | safe }}</div>
 </section>
 
 <section>
-  <h2>Comparativa de vuelos</h2>
+  <h2><span class="sec-num">03</span>Comparativa de vuelos</h2>
+  <div class="table-wrap">
   <table>
     <thead>
       <tr>
         <th></th>
         <th>Archivo</th>
         <th>Formato</th>
-        <th>Duración</th>
-        <th>Distancia</th>
-        <th>Críticos</th>
-        <th>Advertencias</th>
+        <th class="num">Duración</th>
+        <th class="num">Distancia</th>
+        <th class="num">Críticos</th>
+        <th class="num">Advertencias</th>
         <th>Impacto estimado</th>
         <th>Integridad</th>
       </tr>
@@ -71,15 +108,15 @@
         <td><span class="swatch" style="background:{{ flight.color }};"></span></td>
         <td>{{ flight.source_file }}</td>
         <td>{{ flight.source_format }}</td>
-        <td>{{ "%.0f"|format(flight.duration_seconds) }} s</td>
-        <td>{{ "%.0f"|format(flight.total_distance_m) }} m</td>
-        <td class="sev-critical">{{ flight.critical_events }}</td>
-        <td class="sev-warning">{{ flight.warning_events }}</td>
+        <td class="num">{{ "%.0f"|format(flight.duration_seconds) }} s</td>
+        <td class="num">{{ "%.0f"|format(flight.total_distance_m) }} m</td>
+        <td class="num sev-critical">{{ flight.critical_events }}</td>
+        <td class="num sev-warning">{{ flight.warning_events }}</td>
         <td>
-          {% if flight.has_impact_estimate %}<span class="badge badge-dirty">sí</span>{% else %}<span class="badge badge-neutral">no</span>{% endif %}
+          {% if flight.has_impact_estimate %}<span class="tag tag-critical">sí</span>{% else %}<span class="tag tag-neutral">no</span>{% endif %}
         </td>
         <td>
-          {% if flight.integrity_clean %}<span class="badge badge-clean">sin indicios</span>{% else %}<span class="badge badge-dirty">revisar</span>{% endif %}
+          {% if flight.integrity_clean %}<span class="tag tag-clean">sin indicios</span>{% else %}<span class="tag tag-critical">revisar</span>{% endif %}
         </td>
       </tr>
     {% else %}
@@ -87,7 +124,9 @@
     {% endfor %}
     </tbody>
   </table>
+  </div>
 </section>
 
+</div>
 </body>
 </html>

@@ -20,7 +20,7 @@ def test_generate_report_for_clean_flight(tmp_path, synthetic_flight_log):
 
     html = open(result_path, encoding="utf-8").read()
     assert "Informe de vuelo" in html
-    assert "badge-clean" in html  # sin indicios de integridad, log limpio
+    assert "tag-clean" in html  # sin indicios de integridad, log limpio
     assert "Estimación de impacto" not in html  # vuelo nivelado: no deberia proyectarse impacto
 
 
@@ -47,7 +47,7 @@ def test_generate_report_flags_integrity_findings(tmp_path):
     generate_report(log, str(output_path))
 
     html = open(output_path, encoding="utf-8").read()
-    assert "badge-dirty" in html
+    assert "tag-critical" in html
 
 
 def test_generate_fleet_report_combines_multiple_flights(tmp_path, synthetic_flight_log):
@@ -72,4 +72,4 @@ def test_generate_report_shows_ml_badge_for_ml_events(tmp_path, synthetic_flight
     generate_report(synthetic_flight_log, str(output_path))
 
     html = open(output_path, encoding="utf-8").read()
-    assert "badge-ml" in html
+    assert "tag-ml" in html

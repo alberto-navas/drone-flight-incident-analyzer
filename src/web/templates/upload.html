@@ -4,47 +4,73 @@
 <meta charset="UTF-8">
 <title>Drone Flight Incident Analyzer</title>
 <style>
-  /* Mismo lenguaje visual que los informes generados (src/report/templates/), para que la app se sienta un solo producto. */
-  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; padding: 2rem; background: #f7f8fa; color: #1a202c; display: flex; justify-content: center; }
-  main { max-width: 640px; width: 100%; }
-  h1 { margin-bottom: 0.2rem; }
-  .subtitle { color: #718096; margin-top: 0; }
-  section { background: white; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-  label { display: block; font-weight: 600; margin-bottom: 0.3rem; }
-  .hint { color: #718096; font-size: 0.85rem; margin: 0.2rem 0 1rem 0; }
-  input[type="file"] { width: 100%; padding: 0.6rem; border: 1px dashed #cbd5e0; border-radius: 6px; background: #f7f8fa; margin-bottom: 1rem; }
-  input[type="number"] { width: 100%; padding: 0.5rem; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 1rem; box-sizing: border-box; }
-  button { background: #2b6cb0; color: white; border: none; padding: 0.7rem 1.4rem; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; }
-  button:hover { background: #2c5282; }
-  button:disabled { background: #a0aec0; cursor: wait; }
-  .formats { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
-  .formats span { background: #e2e8f0; color: #4a5568; padding: 0.15rem 0.6rem; border-radius: 999px; font-size: 0.78rem; }
-  #status { margin-top: 1rem; color: #2b6cb0; font-size: 0.9rem; display: none; }
+  /* Mismo sistema de diseño que los informes generados (src/report/templates/), para que la app se sienta un solo producto. */
+  :root {
+    --bg: #eef1f5; --surface: #ffffff; --surface-alt: #f4f6f9;
+    --ink: #101828; --muted: #5d6b82; --border: #dde3ea; --accent: #1b4965;
+    --font-mono: ui-monospace, "Cascadia Code", "SF Mono", Consolas, "Roboto Mono", monospace;
+    --font-sans: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0b0f14; --surface:#131a22; --surface-alt:#0f151c; --ink:#e6ebf0; --muted:#93a1b4; --border:#263241; --accent:#6fb3d9; }
+  }
+  :root[data-theme="dark"] { --bg:#0b0f14; --surface:#131a22; --surface-alt:#0f151c; --ink:#e6ebf0; --muted:#93a1b4; --border:#263241; --accent:#6fb3d9; }
+  :root[data-theme="light"] { --bg:#eef1f5; --surface:#ffffff; --surface-alt:#f4f6f9; --ink:#101828; --muted:#5d6b82; --border:#dde3ea; --accent:#1b4965; }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 3rem 1.25rem; background: var(--bg); color: var(--ink); font-family: var(--font-sans); display: flex; justify-content: center; }
+  main { max-width: 620px; width: 100%; }
+
+  .eyebrow { font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); font-weight: 700; margin: 0 0 0.5rem 0; }
+  h1 { margin: 0 0 0.4rem 0; font-size: 1.55rem; font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
+  .subtitle { color: var(--muted); margin: 0 0 1.75rem 0; font-size: 0.95rem; }
+
+  section { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; }
+
+  label { display: block; font-weight: 600; margin-bottom: 0.35rem; font-size: 0.92rem; }
+  .hint { color: var(--muted); font-size: 0.83rem; margin: 0.3rem 0 1.1rem 0; line-height: 1.4; }
+
+  input[type="file"] { width: 100%; padding: 0.75rem; border: 1px dashed var(--border); border-radius: 6px; background: var(--surface-alt); color: var(--ink); margin-bottom: 0.6rem; font-family: var(--font-sans); font-size: 0.9rem; }
+  input[type="number"] { width: 100%; padding: 0.55rem 0.7rem; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--ink); margin-bottom: 0.3rem; font-family: var(--font-mono); font-size: 0.92rem; }
+  input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  .formats { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 1.4rem; }
+  .formats span { font-family: var(--font-mono); background: var(--surface-alt); border: 1px solid var(--border); color: var(--muted); padding: 0.2rem 0.55rem; border-radius: 4px; font-size: 0.74rem; }
+
+  button { background: var(--accent); color: var(--surface); border: none; padding: 0.75rem 1.5rem; border-radius: 6px; font-family: var(--font-sans); font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+  button:hover { filter: brightness(1.1); }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button:disabled { background: var(--muted); cursor: wait; }
+
+  #status { margin-top: 1rem; color: var(--accent); font-size: 0.87rem; display: none; font-family: var(--font-mono); }
+
+  @media (prefers-reduced-motion: no-preference) { button { transition: filter 0.1s ease; } }
 </style>
 </head>
 <body>
 <main>
+  <p class="eyebrow">Análisis forense de vuelo</p>
   <h1>Drone Flight Incident Analyzer</h1>
-  <p class="subtitle">Sube uno o varios logs de vuelo y genera el informe forense directamente aquí.</p>
+  <p class="subtitle">Sube uno o varios logs de vuelo y genera el informe directamente aquí, sin usar la terminal.</p>
 
   <section>
     <form id="analyze-form" action="/analyze" method="post" enctype="multipart/form-data">
       <label for="files">Log(s) de vuelo</label>
       <input type="file" id="files" name="files" multiple required>
-      <p class="hint">
-        Selecciona un archivo para un informe individual, o varios para un panel comparativo de flota.
-      </p>
       <div class="formats">
         <span>ArduPilot .bin</span>
         <span>PX4 .ulog</span>
         <span>Betaflight .BBL / .csv</span>
       </div>
+      <p class="hint">
+        Un archivo → informe individual. Varios archivos → panel comparativo de flota.
+      </p>
 
-      <label for="mass_kg" style="margin-top: 1.25rem;">Masa del vehículo en kg (opcional)</label>
+      <label for="mass_kg">Masa del vehículo en kg (opcional)</label>
       <input type="number" id="mass_kg" name="mass_kg" step="0.1" min="0" placeholder="p. ej. 1.5">
       <p class="hint">
         Solo se usa si el vuelo termina en un descenso brusco: permite calcular la energía cinética estimada del
-        impacto. Solo aplica cuando subes un único archivo.
+        impacto. Solo aplica al subir un único archivo.
       </p>
 
       <button type="submit" id="submit-btn">Analizar</button>

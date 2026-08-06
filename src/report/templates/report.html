@@ -4,84 +4,171 @@
 <meta charset="UTF-8">
 <title>Informe de vuelo — {{ summary.source_file }}</title>
 <style>
-  /* Estilo minimo, sin dependencias externas, para que el informe siga
-     siendo un unico archivo autocontenido. */
-  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; padding: 2rem; background: #f7f8fa; color: #1a202c; }
-  h1 { margin-bottom: 0.2rem; }
-  .subtitle { color: #718096; margin-top: 0; }
-  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
-  .card { background: white; border-radius: 8px; padding: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-  .card .label { font-size: 0.75rem; text-transform: uppercase; color: #718096; }
-  .card .value { font-size: 1.4rem; font-weight: 600; }
-  section { background: white; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-  section h2 { margin-top: 0; }
-  iframe { width: 100%; height: 500px; border: none; border-radius: 4px; }
-  table { width: 100%; border-collapse: collapse; }
-  th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; }
-  .sev-critical { color: #c53030; font-weight: 600; }
-  .sev-warning { color: #b7791f; font-weight: 600; }
-  .sev-info { color: #2b6cb0; }
-  .impact-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
-  .impact-grid .value { font-size: 1.2rem; font-weight: 600; }
-  .assumptions { background: #fffaf0; border: 1px solid #feebc8; border-radius: 6px; padding: 0.75rem 1rem; font-size: 0.85rem; color: #7b341e; }
-  .assumptions ul { margin: 0.3rem 0 0 1.1rem; padding: 0; }
-  .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600; }
-  .badge-clean { background: #c6f6d5; color: #22543d; }
-  .badge-dirty { background: #fed7d7; color: #822727; }
-  .badge-ml { background: #e9d8fd; color: #553c9a; }
-  .badge-rule { background: #e2e8f0; color: #4a5568; }
+  /* Sistema de diseño compartido por los tres HTML del proyecto (informe
+     individual, panel de flota, formulario web): paleta anclada en el
+     color naranja internacional real de las "cajas negras" de aviación
+     (reservado aqui para lo critico), y tipografia monoespaciada para
+     cabeceras/datos, evocando la lectura de un instrumento de vuelo.
+     Sin dependencias externas: el informe sigue siendo un unico archivo
+     autocontenido. */
+  :root {
+    --bg: #eef1f5;
+    --surface: #ffffff;
+    --surface-alt: #f4f6f9;
+    --ink: #101828;
+    --muted: #5d6b82;
+    --border: #dde3ea;
+    --accent: #1b4965;
+    --critical: #c1272d;
+    --warning: #d9822b;
+    --info: #3d7ea6;
+    --clean: #2f855a;
+    --font-mono: ui-monospace, "Cascadia Code", "SF Mono", Consolas, "Roboto Mono", monospace;
+    --font-sans: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b0f14; --surface: #131a22; --surface-alt: #0f151c;
+      --ink: #e6ebf0; --muted: #93a1b4; --border: #263241;
+      --accent: #6fb3d9; --critical: #ff6b6b; --warning: #f0a34e; --info: #6fb3d9; --clean: #55c98a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b0f14; --surface: #131a22; --surface-alt: #0f151c;
+    --ink: #e6ebf0; --muted: #93a1b4; --border: #263241;
+    --accent: #6fb3d9; --critical: #ff6b6b; --warning: #f0a34e; --info: #6fb3d9; --clean: #55c98a;
+  }
+  :root[data-theme="light"] {
+    --bg: #eef1f5; --surface: #ffffff; --surface-alt: #f4f6f9;
+    --ink: #101828; --muted: #5d6b82; --border: #dde3ea;
+    --accent: #1b4965; --critical: #c1272d; --warning: #d9822b; --info: #3d7ea6; --clean: #2f855a;
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 2.5rem 1.25rem; background: var(--bg); color: var(--ink); font-family: var(--font-sans); }
+  .page { max-width: 880px; margin: 0 auto; }
+
+  header.report-header { margin-bottom: 1.75rem; }
+  h1 { margin: 0 0 0.35rem 0; font-size: 1.6rem; font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
+  .meta { color: var(--muted); margin: 0 0 0.75rem 0; font-size: 0.92rem; }
+  .meta code { font-family: var(--font-mono); background: var(--surface-alt); padding: 0.1rem 0.35rem; border-radius: 3px; }
+
+  .tag { display: inline-flex; align-items: center; gap: 0.35em; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 0.25rem 0.6rem; border-radius: 4px; border: 1px solid; }
+  .tag-critical { background: #fbe9e7; color: var(--critical); border-color: #f2c4bd; }
+  .tag-warning  { background: #fbf0e2; color: var(--warning); border-color: #f0dcb8; }
+  .tag-clean    { background: #e7f5ec; color: var(--clean); border-color: #bfe3cd; }
+  .tag-ml       { background: #e8f0f5; color: var(--accent); border-color: #c7dbe6; }
+  .tag-rule     { background: var(--surface-alt); color: var(--muted); border-color: var(--border); }
+  @media (prefers-color-scheme: dark) {
+    .tag-critical { background: #3a1712; border-color: #5c231b; }
+    .tag-warning  { background: #3a2a12; border-color: #5c4420; }
+    .tag-clean    { background: #123322; border-color: #1f4d34; }
+    .tag-ml       { background: #152735; border-color: #213b4d; }
+  }
+  :root[data-theme="dark"] .tag-critical { background: #3a1712; border-color: #5c231b; }
+  :root[data-theme="dark"] .tag-warning  { background: #3a2a12; border-color: #5c4420; }
+  :root[data-theme="dark"] .tag-clean    { background: #123322; border-color: #1f4d34; }
+  :root[data-theme="dark"] .tag-ml       { background: #152735; border-color: #213b4d; }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 1.5rem 0; }
+  .stat { background: var(--surface); padding: 0.95rem 1.1rem; }
+  .stat .label { font-family: var(--font-mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+  .stat .value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1.4rem; font-weight: 600; margin-top: 0.3rem; }
+  .stat.stat-critical .value { color: var(--critical); }
+  .stat.stat-warning .value { color: var(--warning); }
+
+  section { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem 1.4rem; margin-bottom: 1.25rem; }
+  section h2 { margin: 0 0 0.9rem 0; font-size: 1.05rem; font-weight: 700; display: flex; align-items: baseline; gap: 0.6rem; letter-spacing: -0.005em; }
+  .sec-num { font-family: var(--font-mono); font-size: 0.82rem; color: var(--accent); font-weight: 600; }
+  .note { color: var(--muted); font-size: 0.87rem; margin: 0 0 0.9rem 0; }
+
+  .figure { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .figure iframe { display: block; width: 100%; height: 500px; border: none; }
+  .figure-caption { font-family: var(--font-mono); font-size: 0.7rem; color: var(--muted); padding: 0.5rem 0.75rem; border-top: 1px solid var(--border); background: var(--surface-alt); }
+
+  .impact-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 1rem; }
+  .impact-grid .stat { background: var(--surface); }
+
+  .callout { background: var(--surface-alt); border: 1px solid var(--border); border-left: 3px solid var(--warning); border-radius: 6px; padding: 0.8rem 1rem; font-size: 0.85rem; }
+  .callout strong { color: var(--warning); }
+  .callout ul { margin: 0.4rem 0 0 1.1rem; padding: 0; }
+  .callout li { margin-bottom: 0.25rem; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.87rem; }
+  thead th { text-align: left; font-family: var(--font-mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); padding: 0.5rem 0.6rem; border-bottom: 2px solid var(--border); white-space: nowrap; }
+  tbody td { padding: 0.55rem 0.6rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tbody tr:hover { background: var(--surface-alt); }
+  td.num, th.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .table-wrap { overflow-x: auto; }
+  .sev-critical { color: var(--critical); font-weight: 600; }
+  .sev-warning { color: var(--warning); font-weight: 600; }
+  .sev-info { color: var(--info); }
+
+  @media (prefers-reduced-motion: no-preference) { tbody tr { transition: background-color 0.1s ease; } }
 </style>
 </head>
 <body>
+<div class="page">
 
-<h1>Informe de vuelo — analisis forense</h1>
-<p class="subtitle">Generado el {{ generated_at }} · Fuente: {{ summary.source_format }} ({{ summary.source_file }})</p>
+<header class="report-header">
+  <h1>Informe de vuelo — análisis forense</h1>
+  <p class="meta">Generado el {{ generated_at }} · Fuente: {{ summary.source_format }} · <code>{{ summary.source_file }}</code></p>
+  {% if summary.events_by_severity.critical > 0 %}
+    <span class="tag tag-critical">Hallazgos críticos</span>
+  {% elif summary.events_by_severity.warning > 0 %}
+    <span class="tag tag-warning">Advertencias</span>
+  {% else %}
+    <span class="tag tag-clean">Nominal</span>
+  {% endif %}
+</header>
 
-<div class="summary-grid">
-  <div class="card"><div class="label">Duracion</div><div class="value">{{ "%.0f"|format(summary.duration_seconds) }} s</div></div>
-  <div class="card"><div class="label">Distancia recorrida</div><div class="value">{{ "%.0f"|format(summary.total_distance_m) }} m</div></div>
-  <div class="card"><div class="label">Altitud maxima</div>
+<div class="stat-grid">
+  <div class="stat"><div class="label">Duración</div><div class="value">{{ "%.0f"|format(summary.duration_seconds) }} s</div></div>
+  <div class="stat"><div class="label">Distancia recorrida</div><div class="value">{{ "%.0f"|format(summary.total_distance_m) }} m</div></div>
+  <div class="stat"><div class="label">Altitud máxima</div>
     <div class="value">{% if summary.max_altitude_m is not none %}{{ "%.1f"|format(summary.max_altitude_m) }} m{% else %}—{% endif %}</div>
   </div>
-  <div class="card"><div class="label">Velocidad maxima</div>
+  <div class="stat"><div class="label">Velocidad máxima</div>
     <div class="value">{% if summary.max_speed_ms is not none %}{{ "%.1f"|format(summary.max_speed_ms) }} m/s{% else %}—{% endif %}</div>
   </div>
-  <div class="card"><div class="label">Eventos criticos</div><div class="value sev-critical">{{ summary.events_by_severity.critical }}</div></div>
-  <div class="card"><div class="label">Advertencias</div><div class="value sev-warning">{{ summary.events_by_severity.warning }}</div></div>
+  <div class="stat stat-critical"><div class="label">Eventos críticos</div><div class="value">{{ summary.events_by_severity.critical }}</div></div>
+  <div class="stat stat-warning"><div class="label">Advertencias</div><div class="value">{{ summary.events_by_severity.warning }}</div></div>
 </div>
 
 <section>
-  <h2>Ruta de vuelo</h2>
-  {{ map_html | safe }}
-  {% if impact %}
-  <p class="subtitle" style="margin-top:0.75rem;">La linea discontinua roja es el tramo EXTRAPOLADO tras el ultimo dato real del log — ver detalle en "Estimación de impacto" más abajo.</p>
-  {% endif %}
+  <h2><span class="sec-num">01</span>Ruta de vuelo</h2>
+  <div class="figure">
+    {{ map_html | safe }}
+    {% if impact %}
+    <p class="figure-caption">La línea discontinua roja es el tramo EXTRAPOLADO tras el último dato real del log — ver "03 · Estimación de impacto".</p>
+    {% endif %}
+  </div>
 </section>
 
 <section>
-  <h2>Telemetria</h2>
-  {{ timeline_html | safe }}
+  <h2><span class="sec-num">02</span>Telemetría</h2>
+  <div class="figure">{{ timeline_html | safe }}</div>
 </section>
 
 {% if impact %}
 <section>
-  <h2>Estimación de impacto</h2>
-  <p class="subtitle" style="margin-top:0;">
+  <h2><span class="sec-num">03</span>Estimación de impacto</h2>
+  <p class="note">
     El log termina en t={{ "%.1f"|format(impact.last_known_timestamp) }}s en pleno descenso, antes de tocar
     el suelo. Lo siguiente es una PROYECCIÓN física a partir de esa última trayectoria conocida, no un dato
     registrado por el dron.
   </p>
   <div class="impact-grid">
-    <div class="card"><div class="label">Tiempo hasta el impacto</div><div class="value">{{ "%.1f"|format(impact.time_to_impact_s) }} s</div></div>
-    <div class="card"><div class="label">Posición estimada</div><div class="value">{{ "%.5f"|format(impact.lat) }}, {{ "%.5f"|format(impact.lon) }}</div></div>
-    <div class="card"><div class="label">Velocidad vertical al impacto</div><div class="value">{{ "%.1f"|format(impact.vertical_speed_at_impact_ms) }} m/s</div></div>
-    <div class="card"><div class="label">Velocidad total al impacto</div><div class="value">{{ "%.1f"|format(impact.total_speed_at_impact_ms) }} m/s</div></div>
+    <div class="stat"><div class="label">Tiempo hasta el impacto</div><div class="value">{{ "%.1f"|format(impact.time_to_impact_s) }} s</div></div>
+    <div class="stat"><div class="label">Posición estimada</div><div class="value" style="font-size:1rem;">{{ "%.5f"|format(impact.lat) }}, {{ "%.5f"|format(impact.lon) }}</div></div>
+    <div class="stat"><div class="label">Velocidad vertical al impacto</div><div class="value">{{ "%.1f"|format(impact.vertical_speed_at_impact_ms) }} m/s</div></div>
+    <div class="stat"><div class="label">Velocidad total al impacto</div><div class="value">{{ "%.1f"|format(impact.total_speed_at_impact_ms) }} m/s</div></div>
     {% if impact.kinetic_energy_j is not none %}
-    <div class="card"><div class="label">Energía cinética estimada</div><div class="value">{{ "%.0f"|format(impact.kinetic_energy_j) }} J</div></div>
+    <div class="stat"><div class="label">Energía cinética estimada</div><div class="value">{{ "%.0f"|format(impact.kinetic_energy_j) }} J</div></div>
     {% endif %}
   </div>
-  <div class="assumptions">
-    <strong>Asunciones de esta estimación (léase antes de citar estos números):</strong>
+  <div class="callout">
+    <strong>Asunciones de esta estimación</strong> (léase antes de citar estos números):
     <ul>
     {% for assumption in impact.assumptions %}
       <li>{{ assumption }}</li>
@@ -91,16 +178,45 @@
 </section>
 {% endif %}
 
+{% if synced_events %}
 <section>
-  <h2>Linea de tiempo de eventos</h2>
+  <h2><span class="sec-num">04</span>Sincronización con vídeo</h2>
+  <p class="note">
+    Cada evento del log correlacionado con su fotograma de vídeo más cercano. La columna "GPS log vs. vídeo"
+    compara la posición que dice el log del autopiloto con la que dice el archivo de subtítulos del vídeo en
+    ese mismo instante — dos fuentes de GPS independientes que, si no coinciden, merece la pena revisar.
+  </p>
+  <div class="table-wrap">
   <table>
-    <thead><tr><th>Tiempo (s)</th><th>Severidad</th><th>Origen</th><th>Categoria</th><th>Descripcion</th></tr></thead>
+    <thead><tr><th class="num">Tiempo log (s)</th><th class="num">Tiempo vídeo (s)</th><th>Evento</th><th class="num">GPS log vs. vídeo</th></tr></thead>
+    <tbody>
+    {% for s in synced_events %}
+      <tr>
+        <td class="num">{{ "%.1f"|format(s.flight_event_timestamp) }}</td>
+        <td class="num">{% if s.video_timestamp_s is not none %}{{ "%.1f"|format(s.video_timestamp_s) }}{% else %}—{% endif %}</td>
+        <td>{{ s.description }}</td>
+        <td class="num">
+          {% if s.gps_cross_check_distance_m is not none %}{{ "%.1f"|format(s.gps_cross_check_distance_m) }} m{% else %}—{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endif %}
+
+<section>
+  <h2><span class="sec-num">05</span>Línea de tiempo de eventos</h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th class="num">Tiempo (s)</th><th>Severidad</th><th>Origen</th><th>Categoría</th><th>Descripción</th></tr></thead>
     <tbody>
     {% for event in events %}
       <tr>
-        <td>{{ "%.1f"|format(event.timestamp) }}</td>
+        <td class="num">{{ "%.1f"|format(event.timestamp) }}</td>
         <td class="sev-{{ event.severity }}">{{ event.severity }}</td>
-        <td>{% if event.method == "ml" %}<span class="badge badge-ml" title="Detectado por Isolation Forest, no por una regla explicita">ML</span>{% else %}<span class="badge badge-rule">regla</span>{% endif %}</td>
+        <td>{% if event.method == "ml" %}<span class="tag tag-ml" title="Detectado por Isolation Forest, no por una regla explícita">ML</span>{% else %}<span class="tag tag-rule">regla</span>{% endif %}</td>
         <td>{{ event.category }}</td>
         <td>{{ event.description }}</td>
       </tr>
@@ -109,56 +225,30 @@
     {% endfor %}
     </tbody>
   </table>
-  <p class="subtitle" style="margin-top:0.5rem;">
+  </div>
+  <p class="note" style="margin: 0.75rem 0 0 0;">
     "regla" = detectado por un umbral explicable (ver código); "ML" = patrón estadísticamente anómalo detectado por
     un modelo entrenado solo con este vuelo — merece más revisión humana antes de sacar conclusiones.
   </p>
 </section>
 
-{% if synced_events %}
 <section>
-  <h2>Sincronización con vídeo</h2>
-  <p class="subtitle" style="margin-top:0;">
-    Cada evento del log correlacionado con su fotograma de vídeo más cercano. La columna "GPS log vs. vídeo"
-    compara la posición que dice el log del autopiloto con la que dice el archivo de subtítulos del vídeo en
-    ese mismo instante — dos fuentes de GPS independientes que, si no coinciden, merece la pena revisar.
-  </p>
-  <table>
-    <thead><tr><th>Tiempo en el log (s)</th><th>Tiempo en el vídeo (s)</th><th>Evento</th><th>GPS log vs. vídeo</th></tr></thead>
-    <tbody>
-    {% for s in synced_events %}
-      <tr>
-        <td>{{ "%.1f"|format(s.flight_event_timestamp) }}</td>
-        <td>{% if s.video_timestamp_s is not none %}{{ "%.1f"|format(s.video_timestamp_s) }}{% else %}—{% endif %}</td>
-        <td>{{ s.description }}</td>
-        <td>
-          {% if s.gps_cross_check_distance_m is not none %}
-            {{ "%.1f"|format(s.gps_cross_check_distance_m) }} m
-          {% else %}—{% endif %}
-        </td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-</section>
-{% endif %}
-
-<section>
-  <h2>Verificación de integridad
+  <h2><span class="sec-num">06</span>Verificación de integridad
     {% if integrity.looks_clean %}
-      <span class="badge badge-clean">sin indicios</span>
+      <span class="tag tag-clean">sin indicios</span>
     {% else %}
-      <span class="badge badge-dirty">{{ integrity.findings|length }} indicio(s)</span>
+      <span class="tag tag-critical">{{ integrity.findings|length }} indicio(s)</span>
     {% endif %}
   </h2>
-  <p class="subtitle" style="margin-top:0;">{{ integrity.summary }}</p>
+  <p class="note">{{ integrity.summary }}</p>
   {% if integrity.findings %}
+  <div class="table-wrap">
   <table>
-    <thead><tr><th>Tiempo (s)</th><th>Severidad</th><th>Tipo</th><th>Descripción</th></tr></thead>
+    <thead><tr><th class="num">Tiempo (s)</th><th>Severidad</th><th>Tipo</th><th>Descripción</th></tr></thead>
     <tbody>
     {% for finding in integrity.findings %}
       <tr>
-        <td>{{ "%.1f"|format(finding.timestamp) }}</td>
+        <td class="num">{{ "%.1f"|format(finding.timestamp) }}</td>
         <td class="sev-{{ finding.severity }}">{{ finding.severity }}</td>
         <td>{{ finding.kind }}{% if finding.field %} ({{ finding.field }}){% endif %}</td>
         <td>{{ finding.description }}</td>
@@ -166,8 +256,10 @@
     {% endfor %}
     </tbody>
   </table>
+  </div>
   {% endif %}
 </section>
 
+</div>
 </body>
 </html>
