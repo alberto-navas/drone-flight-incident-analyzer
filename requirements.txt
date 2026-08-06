@@ -11,3 +11,4 @@ fastapi>=0.110.0        # interfaz web (subir log -> ver informe en el navegador
 uvicorn>=0.29.0          # servidor ASGI para correr la interfaz web
 python-multipart>=0.0.9  # soporte de subida de archivos (multipart/form-data) en FastAPI
 httpx>=0.27.0            # cliente HTTP usado por TestClient en los tests de la web (dependencia de desarrollo)
+ruff>=0.16.0             # lint + formato de codigo (dependencia de desarrollo)

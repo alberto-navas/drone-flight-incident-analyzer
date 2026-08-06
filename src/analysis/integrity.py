@@ -98,7 +98,7 @@ def _check_gaps(flight_log: FlightLog) -> list[IntegrityFinding]:
     if len(timestamps) < 3:
         return findings  # muy pocas muestras para que "la mediana" signifique algo
 
-    gaps = [b - a for a, b in zip(timestamps, timestamps[1:]) if b > a]
+    gaps = [b - a for a, b in zip(timestamps, timestamps[1:], strict=False) if b > a]
     if not gaps:
         return findings
 
@@ -107,7 +107,7 @@ def _check_gaps(flight_log: FlightLog) -> list[IntegrityFinding]:
     if median_gap <= 0:
         return findings
 
-    for a, b in zip(timestamps, timestamps[1:]):
+    for a, b in zip(timestamps, timestamps[1:], strict=False):
         gap = b - a
         if gap >= _MIN_GAP_TO_FLAG_SECONDS and gap > median_gap * _GAP_SUSPICION_FACTOR:
             findings.append(

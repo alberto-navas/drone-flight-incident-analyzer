@@ -10,11 +10,10 @@ origen: solo ve FlightLog / FlightRecord / FlightEvent.
 """
 
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Optional
+from enum import StrEnum
 
 
-class Source(str, Enum):
+class Source(StrEnum):
     """Formato de origen del log. Se guarda en el FlightLog para citarlo en el informe."""
 
     ARDUPILOT = "ardupilot"
@@ -34,17 +33,17 @@ class FlightRecord:
     """
 
     timestamp: float  # segundos desde el inicio del log (tiempo relativo, no epoch Unix)
-    lat: Optional[float] = None  # grados decimales (WGS84)
-    lon: Optional[float] = None  # grados decimales (WGS84)
-    alt: Optional[float] = None  # metros, relativo al punto de despegue/home
-    groundspeed: Optional[float] = None  # m/s
-    battery_voltage: Optional[float] = None  # voltios
-    battery_current: Optional[float] = None  # amperios
-    rc_signal: Optional[float] = None  # calidad/potencia del enlace de radiocontrol (escala depende del formato)
-    flight_mode: Optional[str] = None  # modo de vuelo tal cual lo reporta el firmware (STABILIZE, LOITER, ACRO...)
-    roll: Optional[float] = None  # grados
-    pitch: Optional[float] = None  # grados
-    yaw: Optional[float] = None  # grados
+    lat: float | None = None  # grados decimales (WGS84)
+    lon: float | None = None  # grados decimales (WGS84)
+    alt: float | None = None  # metros, relativo al punto de despegue/home
+    groundspeed: float | None = None  # m/s
+    battery_voltage: float | None = None  # voltios
+    battery_current: float | None = None  # amperios
+    rc_signal: float | None = None  # calidad/potencia del enlace de radiocontrol (escala depende del formato)
+    flight_mode: str | None = None  # modo de vuelo tal cual lo reporta el firmware (STABILIZE, LOITER, ACRO...)
+    roll: float | None = None  # grados
+    pitch: float | None = None  # grados
+    yaw: float | None = None  # grados
 
 
 @dataclass
@@ -62,7 +61,8 @@ class FlightEvent:
     """
 
     timestamp: float
-    category: str  # "rc_loss" | "battery_critical" | "gps_glitch" | "mode_change" | "possible_impact" | "ml_anomaly_*" | ...
+    # "rc_loss" | "battery_critical" | "gps_glitch" | "mode_change" | "possible_impact" | "ml_anomaly_*" | ...
+    category: str
     severity: str  # "info" | "warning" | "critical"
     description: str
     # "rule" (regla explicita, incluye los que vienen del propio firmware) o

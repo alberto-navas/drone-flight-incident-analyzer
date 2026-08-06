@@ -87,7 +87,8 @@ def test_analyze_path_traversal_filename_is_sanitized():
     como una ruta que escriba fuera del directorio temporal.
     """
     malicious_name = "../../../../etc/passwd.bin"
-    response = client.post("/analyze", files={"files": (malicious_name, b"no es un log real", "application/octet-stream")})
+    files = {"files": (malicious_name, b"no es un log real", "application/octet-stream")}
+    response = client.post("/analyze", files=files)
 
     assert response.status_code == 200
     assert "passwd.bin" in response.text

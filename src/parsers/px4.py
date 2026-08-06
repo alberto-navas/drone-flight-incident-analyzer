@@ -175,8 +175,10 @@ def parse_px4_log(file_path: str) -> FlightLog:
     # ArduPilot: texto libre que el flight stack emite ante eventos notables
     # (failsafes, cambios de estimador, fallos de sensor...).
     for lm in ulog.logged_messages:
-        severity = "critical" if lm.log_level <= _SYSLOG_CRITICAL_MAX else (
-            "warning" if lm.log_level == _SYSLOG_WARNING else "info"
+        severity = (
+            "critical"
+            if lm.log_level <= _SYSLOG_CRITICAL_MAX
+            else ("warning" if lm.log_level == _SYSLOG_WARNING else "info")
         )
         log.events.append(
             FlightEvent(

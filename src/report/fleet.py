@@ -16,7 +16,7 @@ generate_report() sobre ese log de forma individual.
 
 from collections import Counter
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import folium
@@ -56,7 +56,7 @@ def _summarize_flight(flight_log: FlightLog, color: str) -> FlightSummary:
     records = flight_log.sorted_records()
     geo_records = [r for r in records if r.lat is not None and r.lon is not None]
     total_distance_m = sum(
-        haversine_distance_m(a.lat, a.lon, b.lat, b.lon) for a, b in zip(geo_records, geo_records[1:])
+        haversine_distance_m(a.lat, a.lon, b.lat, b.lon) for a, b in zip(geo_records, geo_records[1:], strict=False)
     )
     critical = sum(1 for e in flight_log.events if e.severity == "critical")
     warning = sum(1 for e in flight_log.events if e.severity == "warning")
@@ -85,7 +85,7 @@ def _build_legend_html(flight_logs: list[FlightLog], colors: list[str]) -> str:
     dejar que parezca que faltan por error.
     """
     entries, missing_gps = [], []
-    for flight_log, color in zip(flight_logs, colors):
+    for flight_log, color in zip(flight_logs, colors, strict=True):
         name = Path(flight_log.source_file).name
         has_gps = any(r.lat is not None and r.lon is not None for r in flight_log.records)
         if has_gps:
@@ -93,19 +93,23 @@ def _build_legend_html(flight_logs: list[FlightLog], colors: list[str]) -> str:
         else:
             missing_gps.append(name)
 
-    rows_html = "".join(
-        f'<div style="margin-bottom:4px;">'
-        f'<span style="display:inline-block;width:12px;height:12px;border-radius:50%;'
-        f'background:{color};margin-right:6px;vertical-align:middle;"></span>{name}</div>'
-        for name, color in entries
-    ) or '<div style="color:#718096;">Ningún vuelo del conjunto trae GPS.</div>'
+    rows_html = (
+        "".join(
+            f'<div style="margin-bottom:4px;">'
+            f'<span style="display:inline-block;width:12px;height:12px;border-radius:50%;'
+            f'background:{color};margin-right:6px;vertical-align:middle;"></span>{name}</div>'
+            for name, color in entries
+        )
+        or '<div style="color:#718096;">Ningún vuelo del conjunto trae GPS.</div>'
+    )
 
     missing_html = ""
     if missing_gps:
         missing_html = (
             '<div style="margin-top:6px;padding-top:6px;border-top:1px solid #e2e8f0;'
             'font-size:0.75rem;color:#718096;">Sin GPS en el log (no aparecen en el mapa): '
-            + ", ".join(missing_gps) + "</div>"
+            + ", ".join(missing_gps)
+            + "</div>"
         )
 
     return f"""
@@ -132,14 +136,16 @@ def _build_combined_map(flight_logs: list[FlightLog], colors: list[str]) -> foli
         return folium.Map(location=[0, 0], zoom_start=2)
 
     fmap = folium.Map(location=all_points[len(all_points) // 2], zoom_start=12)
-    for flight_log, color in zip(flight_logs, colors):
+    for flight_log, color in zip(flight_logs, colors, strict=True):
         records = flight_log.sorted_records()
         points = [(r.lat, r.lon) for r in records if r.lat is not None and r.lon is not None]
         if not points:
             continue  # este vuelo en concreto no tiene GPS (p.ej. Betaflight sin modulo GPS)
         name = Path(flight_log.source_file).name
         folium.PolyLine(points, color=color, weight=3, opacity=0.8, tooltip=name).add_to(fmap)
-        folium.CircleMarker(points[0], radius=6, color=color, fill=True, fill_opacity=1, tooltip=f"Inicio — {name}").add_to(fmap)
+        folium.CircleMarker(
+            points[0], radius=6, color=color, fill=True, fill_opacity=1, tooltip=f"Inicio — {name}"
+        ).add_to(fmap)
 
     fmap.get_root().html.add_child(folium.Element(_build_legend_html(flight_logs, colors)))
     return fmap
@@ -180,7 +186,7 @@ def generate_fleet_report(flight_logs: list[FlightLog], output_path: str) -> str
     que el llamador ya lo hizo sobre cada FlightLog antes de pasarlo.
     """
     colors = [_ROUTE_COLORS[i % len(_ROUTE_COLORS)] for i in range(len(flight_logs))]
-    summaries = [_summarize_flight(fl, color) for fl, color in zip(flight_logs, colors)]
+    summaries = [_summarize_flight(fl, color) for fl, color in zip(flight_logs, colors, strict=True)]
 
     map_html = _build_combined_map(flight_logs, colors)._repr_html_()
     histogram_html = _build_anomaly_histogram(flight_logs).to_html(full_html=False, include_plotlyjs=True)
@@ -197,7 +203,7 @@ def generate_fleet_report(flight_logs: list[FlightLog], output_path: str) -> str
         flights_with_impact=sum(1 for s in summaries if s.has_impact_estimate),
         map_html=map_html,
         histogram_html=histogram_html,
-        generated_at=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+        generated_at=datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC"),
     )
 
     output_file = Path(output_path)

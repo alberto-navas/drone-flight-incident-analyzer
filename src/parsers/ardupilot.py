@@ -145,9 +145,7 @@ def _consume_messages(mlog, log: FlightLog) -> None:
             )
 
         elif msg_type == "RSSI":
-            log.records.append(
-                FlightRecord(timestamp=ts, rc_signal=getattr(msg, "RXRSSI", None))
-            )
+            log.records.append(FlightRecord(timestamp=ts, rc_signal=getattr(msg, "RXRSSI", None)))
 
         elif msg_type == "MODE":
             mode_name = getattr(msg, "Mode", None)

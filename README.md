@@ -1,6 +1,7 @@
 # Drone Flight Incident Analyzer
 
 ![Tests](https://github.com/alberto-navas/drone-flight-incident-analyzer/actions/workflows/tests.yml/badge.svg)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **Demo en vivo: [drone-flight-incident-analyzer.onrender.com](https://drone-flight-incident-analyzer.onrender.com)**
 (plan gratuito: si lleva un rato dormido, la primera carga tarda ~30-50s)
@@ -180,6 +181,19 @@ recorte real de ArduPilot de 64 KB, un log real de PX4 de ~900 KB, y CSVs/SRT
 sintéticos) — no dependen de descargar nada externo, así que corren igual en
 local que en CI. Se ejecutan automáticamente en cada `push` vía GitHub
 Actions (`.github/workflows/tests.yml`), en Ubuntu y Windows.
+
+## Calidad de código
+
+```bash
+ruff check .      # lint
+ruff format .     # formato
+```
+
+Configurado en `pyproject.toml`. Se comprueba automáticamente en cada `push`
+(job `lint` separado de los tests, más rápido al no necesitar las
+dependencias pesadas del proyecto). Detectó de paso dos fugas reales de
+descriptor de archivo (el lector de ArduPilot y el subproceso de
+`blackbox_decode` no cerraban el archivo explícitamente), ya corregidas.
 
 ## Datos de prueba
 

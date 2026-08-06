@@ -140,7 +140,7 @@ def detect_ml_anomalies(flight_log: FlightLog) -> list[FlightEvent]:
     most_anomalous_idx = scores.argmin()  # el punto mas anomalo de TODO el vuelo
 
     events = []
-    for i, ((timestamp, row), label) in enumerate(zip(features.iterrows(), labels)):
+    for i, ((timestamp, row), label) in enumerate(zip(features.iterrows(), labels, strict=True)):
         if label != -1:
             continue
 

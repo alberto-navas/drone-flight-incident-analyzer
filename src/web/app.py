@@ -80,7 +80,10 @@ async def upload_form(request: Request):
 
 
 @app.post("/analyze", response_class=HTMLResponse)
-async def analyze(files: list[UploadFile] = File(...), mass_kg: float | None = Form(None)):
+async def analyze(
+    files: list[UploadFile] = File(...),  # noqa: B008 — patron estandar de FastAPI, no una llamada real en cada request
+    mass_kg: float | None = Form(None),
+):
     if not files:
         raise HTTPException(status_code=400, detail="No se subio ningun archivo.")
 

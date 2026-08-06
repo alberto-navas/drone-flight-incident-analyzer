@@ -49,42 +49,57 @@ def _parse_and_analyze(input_path: Path, forced_format: str | None) -> FlightLog
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Genera un informe forense a partir de uno o varios logs de vuelo de dron.")
+    parser = argparse.ArgumentParser(
+        description="Genera un informe forense a partir de uno o varios logs de vuelo de dron."
+    )
     parser.add_argument(
         "inputs",
         type=Path,
         nargs="+",
-        help="Ruta a uno o varios logs de vuelo (.bin / .ulog / .BBL / .csv). Con varios, genera un panel de flota.",
+        help=("Ruta a uno o varios logs de vuelo (.bin / .ulog / .BBL / .csv). Con varios, genera un panel de flota."),
     )
     parser.add_argument(
         "--format",
         choices=["ardupilot", "px4", "betaflight"],
         default=None,
-        help="Fuerza el formato de TODOS los logs en vez de inferirlo por extension (util con un solo formato mezclado).",
+        help=(
+            "Fuerza el formato de TODOS los logs en vez de inferirlo por extension (util con un solo formato mezclado)."
+        ),
     )
     parser.add_argument(
         "--output",
         type=Path,
         default=None,
-        help="Ruta del informe HTML de salida. Por defecto: output/<nombre>.html (individual) u output/fleet_report.html (flota).",
+        help=(
+            "Ruta del informe HTML de salida. Por defecto: output/<nombre>.html "
+            "(individual) u output/fleet_report.html (flota)."
+        ),
     )
     parser.add_argument(
         "--mass-kg",
         type=float,
         default=None,
-        help="Masa estimada del vehiculo en kg, usada solo para calcular la energia cinetica de impacto (solo modo individual).",
+        help=(
+            "Masa estimada del vehiculo en kg, usada solo para calcular la energia "
+            "cinetica de impacto (solo modo individual)."
+        ),
     )
     parser.add_argument(
         "--video-srt",
         type=Path,
         default=None,
-        help="Archivo .srt de un vuelo DJI para cruzar eventos del log con fotogramas de video (solo modo individual).",
+        help=(
+            "Archivo .srt de un vuelo DJI para cruzar eventos del log con fotogramas de video (solo modo individual)."
+        ),
     )
     parser.add_argument(
         "--video-offset",
         type=float,
         default=0.0,
-        help="Segundos a sumar al tiempo del log para obtener el tiempo de video equivalente (calibrado a mano). Requiere --video-srt.",
+        help=(
+            "Segundos a sumar al tiempo del log para obtener el tiempo de video "
+            "equivalente (calibrado a mano). Requiere --video-srt."
+        ),
     )
     args = parser.parse_args(argv)
 

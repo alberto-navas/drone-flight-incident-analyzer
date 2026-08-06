@@ -7,6 +7,23 @@ on:
     branches: ["**"]
 
 jobs:
+  lint:
+    # Job aparte y mas rapido que la matriz de tests: no necesita las
+    # dependencias pesadas del proyecto (pymavlink, scikit-learn...), solo
+    # ruff, asi que corre en un solo SO sin ralentizar el resto de checks.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Instalar ruff
+        run: pip install ruff
+      - name: Comprobar lint
+        run: ruff check .
+      - name: Comprobar formato
+        run: ruff format --check .
+
   test:
     # Matriz Ubuntu + Windows: el desarrollo se hizo en Windows, pero la
     # herramienta esta pensada para correr en cualquier sitio (p.ej. un

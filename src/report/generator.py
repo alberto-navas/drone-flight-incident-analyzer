@@ -7,7 +7,7 @@ para que sea facil de compartir o archivar como evidencia: un solo fichero,
 sin dependencias externas ni conexion a internet para visualizarlo.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -34,7 +34,7 @@ def _compute_summary(flight_log: FlightLog) -> dict:
     geo_records = [r for r in records if r.lat is not None and r.lon is not None]
 
     total_distance_m = sum(
-        haversine_distance_m(a.lat, a.lon, b.lat, b.lon) for a, b in zip(geo_records, geo_records[1:])
+        haversine_distance_m(a.lat, a.lon, b.lat, b.lon) for a, b in zip(geo_records, geo_records[1:], strict=False)
     )
 
     altitudes = [r.alt for r in records if r.alt is not None]
@@ -108,7 +108,7 @@ def generate_report(
         impact=impact,
         integrity=integrity,
         synced_events=synced_events,
-        generated_at=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+        generated_at=datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC"),
     )
 
     output_file = Path(output_path)

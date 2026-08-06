@@ -1,5 +1,7 @@
 """Tests de extremo a extremo del CLI (src/cli.py)."""
 
+import pytest
+
 from src.cli import main
 
 
@@ -36,8 +38,6 @@ def test_mixed_format_fleet_without_explicit_format(tmp_path, fixtures_dir):
 
 
 def test_missing_input_file_exits_with_error(tmp_path):
-    try:
+    with pytest.raises(SystemExit) as exc_info:
         main([str(tmp_path / "no_existe.bin")])
-        assert False, "deberia haber lanzado SystemExit"
-    except SystemExit as exc:
-        assert exc.code != 0
+    assert exc_info.value.code != 0

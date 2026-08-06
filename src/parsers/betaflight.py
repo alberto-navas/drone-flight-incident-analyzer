@@ -72,12 +72,10 @@ def decode_bbl_to_csv(bbl_path: str, output_dir: str) -> str:
             "para poder convertir logs .BBL a CSV antes de analizarlos."
         )
 
-    subprocess.run(
-        ["blackbox_decode", "--stdout", bbl_path],
-        check=True,
-        stdout=open(Path(output_dir) / (Path(bbl_path).stem + ".csv"), "wb"),
-    )
-    return str(Path(output_dir) / (Path(bbl_path).stem + ".csv"))
+    output_path = Path(output_dir) / (Path(bbl_path).stem + ".csv")
+    with open(output_path, "wb") as out_file:
+        subprocess.run(["blackbox_decode", "--stdout", bbl_path], check=True, stdout=out_file)
+    return str(output_path)
 
 
 def parse_betaflight_csv(csv_path: str, source_bbl_path: str | None = None) -> FlightLog:
@@ -118,21 +116,12 @@ def parse_betaflight_csv(csv_path: str, source_bbl_path: str | None = None) -> F
                 t0_us = ts_us
             ts = (ts_us - t0_us) / 1_000_000.0
 
-            def _float(colname: str | None):
-                """Extrae y convierte a float una columna opcional de la fila actual."""
-                if colname is None:
-                    return None
-                value = row.get(colname)
-                if value is None or value == "":
-                    return None
-                return float(value)
-
-            lat_raw = _float(col["lat"])
-            lon_raw = _float(col["lon"])
-            gps_speed_cms = _float(col["gps_speed_cms"])
-            vbat = _float(col["vbat"])
-            amperage = _float(col["amperage"])
-            rssi = _float(col["rssi"])
+            lat_raw = _row_float(row, col["lat"])
+            lon_raw = _row_float(row, col["lon"])
+            gps_speed_cms = _row_float(row, col["gps_speed_cms"])
+            vbat = _row_float(row, col["vbat"])
+            amperage = _row_float(row, col["amperage"])
+            rssi = _row_float(row, col["rssi"])
 
             log.records.append(
                 FlightRecord(
@@ -141,7 +130,7 @@ def parse_betaflight_csv(csv_path: str, source_bbl_path: str | None = None) -> F
                     # igual que en el binario nativo de PX4/ArduPilot.
                     lat=(lat_raw / 1e7) if lat_raw is not None else None,
                     lon=(lon_raw / 1e7) if lon_raw is not None else None,
-                    alt=_float(col["alt_m"]),
+                    alt=_row_float(row, col["alt_m"]),
                     groundspeed=(gps_speed_cms / 100.0) if gps_speed_cms is not None else None,
                     # Si la columna vino con sufijo "(V)"/"(A)" ya esta en
                     # voltios/amperios reales; si vino "cruda" (centivoltios/
@@ -184,6 +173,16 @@ def parse_betaflight_csv(csv_path: str, source_bbl_path: str | None = None) -> F
 
     log.metadata["parsed_message_count"] = len(log.records) + len(log.events)
     return log
+
+
+def _row_float(row: dict, colname: str | None) -> float | None:
+    """Extrae y convierte a float una columna opcional de una fila del CSV."""
+    if colname is None:
+        return None
+    value = row.get(colname)
+    if value is None or value == "":
+        return None
+    return float(value)
 
 
 def _scaled(value: float | None, colname: str | None) -> float | None:

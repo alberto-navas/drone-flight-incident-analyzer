@@ -25,7 +25,9 @@ def test_gps_cross_check_matches_when_positions_agree(fixtures_dir):
     log = FlightLog(source=Source.ARDUPILOT, source_file="test.bin")
     # Coincide a proposito con la posicion del segundo fotograma del SRT (t=11:00 -> video t=1.5s).
     log.records.append(FlightRecord(timestamp=11.0, lat=47.376950, lon=8.541750, alt=12.0))
-    log.events.append(FlightEvent(timestamp=11.0, category="mode_change", severity="warning", description="evento de prueba"))
+    log.events.append(
+        FlightEvent(timestamp=11.0, category="mode_change", severity="warning", description="evento de prueba")
+    )
 
     synced = sync_events_with_video(log, frames, offset_s=-9.5)
 
@@ -39,7 +41,9 @@ def test_gps_cross_check_flags_mismatch(fixtures_dir):
     log = FlightLog(source=Source.ARDUPILOT, source_file="test.bin")
     # Posicion deliberadamente distinta a la que dice el SRT en el mismo instante.
     log.records.append(FlightRecord(timestamp=13.0, lat=47.381000, lon=8.541950, alt=5.0))
-    log.events.append(FlightEvent(timestamp=13.0, category="rc_loss", severity="critical", description="evento con GPS discrepante"))
+    log.events.append(
+        FlightEvent(timestamp=13.0, category="rc_loss", severity="critical", description="evento con GPS discrepante")
+    )
 
     synced = sync_events_with_video(log, frames, offset_s=-9.5)
 

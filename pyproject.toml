@@ -1,0 +1,14 @@
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+# E/W: pycodestyle, F: pyflakes, I: import sorting, UP: sintaxis moderna de
+# Python, B: bugbear (errores comunes no siempre detectados por pyflakes),
+# SIM: simplificaciones obvias. No se activa un preset agresivo (como ALL):
+# el objetivo es detectar errores reales y mantener un estilo consistente,
+# no forzar un estilo de codigo particular en cada linea.
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]

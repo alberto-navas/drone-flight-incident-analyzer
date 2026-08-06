@@ -111,7 +111,7 @@ def detect_gps_glitches(flight_log: FlightLog) -> list[FlightEvent]:
     events = []
     geo_records = [r for r in flight_log.sorted_records() if r.lat is not None and r.lon is not None]
 
-    for prev, curr in zip(geo_records, geo_records[1:]):
+    for prev, curr in zip(geo_records, geo_records[1:], strict=False):
         dt = curr.timestamp - prev.timestamp
         if dt <= 0:
             continue
@@ -144,7 +144,7 @@ def detect_rapid_descents(flight_log: FlightLog) -> list[FlightEvent]:
     events = []
     alt_records = [r for r in flight_log.sorted_records() if r.alt is not None]
 
-    for prev, curr in zip(alt_records, alt_records[1:]):
+    for prev, curr in zip(alt_records, alt_records[1:], strict=False):
         dt = curr.timestamp - prev.timestamp
         if dt <= 0:
             continue
@@ -176,7 +176,7 @@ def detect_battery_anomalies(flight_log: FlightLog) -> list[FlightEvent]:
     events = []
     batt_records = [r for r in flight_log.sorted_records() if r.battery_voltage is not None]
 
-    for prev, curr in zip(batt_records, batt_records[1:]):
+    for prev, curr in zip(batt_records, batt_records[1:], strict=False):
         dt = curr.timestamp - prev.timestamp
         if dt <= 0:
             continue
@@ -209,9 +209,7 @@ def detect_rc_signal_loss(flight_log: FlightLog) -> list[FlightEvent]:
     perdida de señal en las demas escalas, generados en el propio parser.
     """
     events = []
-    rc_records = [
-        r for r in flight_log.sorted_records() if r.rc_signal is not None and r.rc_signal >= 0
-    ]
+    rc_records = [r for r in flight_log.sorted_records() if r.rc_signal is not None and r.rc_signal >= 0]
 
     was_low = False
     for r in rc_records:

@@ -72,9 +72,7 @@ def build_route_map(flight_log: FlightLog, impact_estimate: ImpactEstimate | Non
         # Discontinua ("dash_array") para distinguir a simple vista un tramo
         # EXTRAPOLADO (no registrado por el log) de la ruta real, que se
         # dibuja arriba con linea solida.
-        folium.PolyLine(
-            [last_point, impact_point], color="#c53030", weight=3, opacity=0.9, dash_array="8"
-        ).add_to(fmap)
+        folium.PolyLine([last_point, impact_point], color="#c53030", weight=3, opacity=0.9, dash_array="8").add_to(fmap)
         folium.Marker(
             impact_point,
             tooltip=(
@@ -118,9 +116,7 @@ def build_telemetry_timeline(flight_log: FlightLog) -> go.Figure:
     alt_x, alt_y = series("alt")
     fig.add_trace(go.Scatter(x=alt_x, y=alt_y, name="Altitud (m)", line=dict(color="#2b6cb0")), row=1, col=1)
     speed_x, speed_y = series("groundspeed")
-    fig.add_trace(
-        go.Scatter(x=speed_x, y=speed_y, name="Velocidad (m/s)", line=dict(color="#38a169")), row=1, col=1
-    )
+    fig.add_trace(go.Scatter(x=speed_x, y=speed_y, name="Velocidad (m/s)", line=dict(color="#38a169")), row=1, col=1)
 
     volt_x, volt_y = series("battery_voltage")
     fig.add_trace(go.Scatter(x=volt_x, y=volt_y, name="Voltaje (V)", line=dict(color="#d69e2e")), row=2, col=1)
@@ -139,9 +135,17 @@ def build_telemetry_timeline(flight_log: FlightLog) -> go.Figure:
         if event.severity == "info":
             continue
         color = _SEVERITY_COLORS[event.severity]
-        fig.add_vline(x=event.timestamp, line_dash="dot", line_color=color, row=1, col=1,
-                       annotation_text=event.category, annotation_position="bottom",
-                       annotation_font_size=9, annotation_textangle=-90)
+        fig.add_vline(
+            x=event.timestamp,
+            line_dash="dot",
+            line_color=color,
+            row=1,
+            col=1,
+            annotation_text=event.category,
+            annotation_position="bottom",
+            annotation_font_size=9,
+            annotation_textangle=-90,
+        )
         fig.add_vline(x=event.timestamp, line_dash="dot", line_color=color, row=2, col=1)
         fig.add_vline(x=event.timestamp, line_dash="dot", line_color=color, row=3, col=1)
 
