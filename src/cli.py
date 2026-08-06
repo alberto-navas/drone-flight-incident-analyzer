@@ -28,13 +28,16 @@ from .report.fleet import generate_fleet_report
 from .report.generator import generate_report
 
 # Mapea la extension del archivo al formato, para que el usuario no tenga
-# que especificar --format en el caso comun. Se puede forzar con --format
-# de todas formas (por ejemplo, un .csv de Betaflight ya decodificado no
-# tiene forma de distinguirse de cualquier otro CSV solo por la extension).
+# que especificar --format en el caso comun, ni siquiera al mezclar varios
+# formatos en modo flota. El unico formato CSV que esta herramienta sabe
+# leer es un Betaflight ya decodificado por blackbox_decode, asi que
+# mapear ".csv" directamente a "betaflight" no es ambiguo en la practica
+# (--format sigue disponible para forzarlo si algun dia hiciera falta).
 _EXTENSION_TO_FORMAT = {
     ".bin": "ardupilot",
     ".ulog": "px4",
     ".bbl": "betaflight",
+    ".csv": "betaflight",
 }
 
 

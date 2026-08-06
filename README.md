@@ -94,11 +94,10 @@ informe) es completamente agnóstico del formato de origen.
 | Betaflight (`.BBL`) | `blackbox_decode` (externo) + parser CSV propio | No hay librería Python oficial; requiere tener `blackbox_decode` instalado. Betaflight no registra actitud absoluta por defecto, así que roll/pitch/yaw no están disponibles para este formato |
 | DJI SRT (vídeo) | `srt` + parser propio | Formato no documentado oficialmente por DJI y distinto entre generaciones; solo se reconocen dos variantes conocidas. La sincronización con el log requiere un offset manual salvo que se aporte la hora UTC real de inicio del log |
 
-**Modo flota**: `--format` fuerza el mismo formato para todos los logs a la
-vez; para mezclar formatos en una sola tanda, todos deben ser
-auto-detectables por extensión (`.bin`/`.ulog`/`.BBL`) — un `.csv` de
-Betaflight ya decodificado no se puede mezclar con otros formatos en el
-mismo comando porque no hay forma de distinguirlo solo por la extensión.
+**Modo flota**: se puede mezclar libremente `.bin` / `.ulog` / `.BBL` / `.csv`
+en la misma tanda — cada archivo se auto-detecta por su extensión de forma
+independiente, `--format` ya no hace falta salvo para forzar un formato
+concreto.
 
 ## Uso
 
@@ -131,8 +130,8 @@ El informe se genera en `output/<nombre_del_log>.html` (o `output/fleet_report.h
 pytest -v
 ```
 
-44 tests que cubren los siete módulos de `src/analysis/` y los cuatro
-parsers, usando fixtures pequeños versionados en `tests/fixtures/` (un
+47 tests que cubren los siete módulos de `src/analysis/`, los cuatro
+parsers y el CLI de extremo a extremo, usando fixtures pequeños versionados en `tests/fixtures/` (un
 recorte real de ArduPilot de 64 KB, un log real de PX4 de ~900 KB, y CSVs/SRT
 sintéticos) — no dependen de descargar nada externo, así que corren igual en
 local que en CI. Se ejecutan automáticamente en cada `push` vía GitHub
