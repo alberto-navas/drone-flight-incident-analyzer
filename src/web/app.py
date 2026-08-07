@@ -51,12 +51,15 @@ limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(title="Drone Flight Incident Analyzer")
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+# El handler de slowapi tiene una firma mas especifica (RateLimitExceeded en
+# vez de Exception generico) de la que espera el stub de Starlette; es el
+# patron oficial de slowapi (ver su documentacion), no un error real.
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
 _templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
 
 
-def _safe_filename(original_name: str) -> str:
+def _safe_filename(original_name: str | None) -> str:
     """
     Se queda solo con el nombre de archivo, descartando cualquier ruta.
 
@@ -64,7 +67,13 @@ def _safe_filename(original_name: str) -> str:
     como "../../etc/cron.d/algo" en el campo filename podria, sin esto,
     hacer que el archivo se escriba fuera del directorio temporal
     pensado. Path(...).name se queda solo con el ultimo componente.
+
+    `original_name` es Optional porque el propio protocolo multipart no
+    obliga a que una parte traiga nombre de archivo (UploadFile.filename de
+    FastAPI lo tipa como `str | None`); si falta, se usa un nombre generico.
     """
+    if not original_name:
+        return "archivo"
     return Path(original_name).name or "archivo"
 
 

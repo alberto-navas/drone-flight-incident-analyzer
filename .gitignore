@@ -6,3 +6,5 @@ data/samples/**/*.ulog
 data/samples/**/*.BBL
 data/samples/**/*.csv
 output/
+.coverage
+htmlcov/

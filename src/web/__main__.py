@@ -11,6 +11,6 @@ import os
 
 import uvicorn
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover — punto de entrada trivial, arranca un servidor real
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run("src.web.app:app", host="127.0.0.1", port=port, reload=False)

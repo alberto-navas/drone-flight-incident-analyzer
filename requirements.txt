@@ -13,3 +13,5 @@ python-multipart>=0.0.9  # soporte de subida de archivos (multipart/form-data) e
 httpx>=0.27.0            # cliente HTTP usado por TestClient en los tests de la web (dependencia de desarrollo)
 ruff>=0.16.0             # lint + formato de codigo (dependencia de desarrollo)
 slowapi>=0.1.9           # limite de peticiones por IP en la interfaz web
+mypy>=1.10.0             # comprobacion estatica de tipos (dependencia de desarrollo)
+pytest-cov>=5.0.0        # cobertura de tests (dependencia de desarrollo)

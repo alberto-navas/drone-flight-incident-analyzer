@@ -23,7 +23,7 @@ import folium
 import plotly.graph_objects as go
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from ..analysis.geo import haversine_distance_m
+from ..analysis.geo import extract_geo_points, haversine_distance_m
 from ..analysis.impact import estimate_impact
 from ..analysis.integrity import check_integrity
 from ..parsers.base import FlightLog
@@ -54,9 +54,13 @@ class FlightSummary:
 def _summarize_flight(flight_log: FlightLog, color: str) -> FlightSummary:
     """Reduce un FlightLog completo a los datos que interesan en la tabla comparativa."""
     records = flight_log.sorted_records()
-    geo_records = [r for r in records if r.lat is not None and r.lon is not None]
+    geo_points = extract_geo_points(records)
     total_distance_m = sum(
-        haversine_distance_m(a.lat, a.lon, b.lat, b.lon) for a, b in zip(geo_records, geo_records[1:], strict=False)
+        (
+            haversine_distance_m(lat1, lon1, lat2, lon2)
+            for (lat1, lon1), (lat2, lon2) in zip(geo_points, geo_points[1:], strict=False)
+        ),
+        start=0.0,
     )
     critical = sum(1 for e in flight_log.events if e.severity == "critical")
     warning = sum(1 for e in flight_log.events if e.severity == "warning")
@@ -127,18 +131,16 @@ def _build_legend_html(flight_logs: list[FlightLog], colors: list[str]) -> str:
 
 def _build_combined_map(flight_logs: list[FlightLog], colors: list[str]) -> folium.Map:
     """Superpone la ruta de cada vuelo en un unico mapa, un color fijo por vuelo, con leyenda."""
-    all_points = []
+    all_points: list[tuple[float, float]] = []
     for flight_log in flight_logs:
-        records = flight_log.sorted_records()
-        all_points.extend((r.lat, r.lon) for r in records if r.lat is not None and r.lon is not None)
+        all_points.extend(extract_geo_points(flight_log.sorted_records()))
 
     if not all_points:
         return folium.Map(location=[0, 0], zoom_start=2)
 
     fmap = folium.Map(location=all_points[len(all_points) // 2], zoom_start=12)
     for flight_log, color in zip(flight_logs, colors, strict=True):
-        records = flight_log.sorted_records()
-        points = [(r.lat, r.lon) for r in records if r.lat is not None and r.lon is not None]
+        points = extract_geo_points(flight_log.sorted_records())
         if not points:
             continue  # este vuelo en concreto no tiene GPS (p.ej. Betaflight sin modulo GPS)
         name = Path(flight_log.source_file).name
@@ -147,7 +149,10 @@ def _build_combined_map(flight_logs: list[FlightLog], colors: list[str]) -> foli
             points[0], radius=6, color=color, fill=True, fill_opacity=1, tooltip=f"Inicio — {name}"
         ).add_to(fmap)
 
-    fmap.get_root().html.add_child(folium.Element(_build_legend_html(flight_logs, colors)))
+    # .html existe en tiempo de ejecucion (es la API publica documentada de
+    # branca.element.Figure para insertar HTML arbitrario), pero folium no
+    # publica stubs de tipos que lo reflejen.
+    fmap.get_root().html.add_child(folium.Element(_build_legend_html(flight_logs, colors)))  # type: ignore[attr-defined]
     return fmap
 
 

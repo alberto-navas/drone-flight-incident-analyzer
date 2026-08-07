@@ -180,7 +180,7 @@ detecta `render.yaml` solo.
 pytest -v
 ```
 
-64 tests que cubren los siete módulos de `src/analysis/`, los cuatro
+69 tests que cubren los siete módulos de `src/analysis/`, los cuatro
 parsers, el CLI, la interfaz web y casos de entrada malformada de extremo a
 extremo, usando fixtures pequeños versionados en `tests/fixtures/` (un
 recorte real de ArduPilot de 64 KB, un log real de PX4 de ~900 KB, CSVs/SRT
@@ -192,15 +192,30 @@ CI. Se ejecutan automáticamente en cada `push` vía GitHub Actions
 ## Calidad de código
 
 ```bash
-ruff check .      # lint
-ruff format .     # formato
+ruff check .        # lint
+ruff format .       # formato
+mypy src/           # comprobación estática de tipos
 ```
 
 Configurado en `pyproject.toml`. Se comprueba automáticamente en cada `push`
-(job `lint` separado de los tests, más rápido al no necesitar las
-dependencias pesadas del proyecto). Detectó de paso dos fugas reales de
-descriptor de archivo (el lector de ArduPilot y el subproceso de
-`blackbox_decode` no cerraban el archivo explícitamente), ya corregidas.
+(job `lint` separado del de tests). `mypy` está configurado para ignorar la
+falta de *type stubs* de las librerías de terceros que no los publican
+(`pymavlink`, `pyulog`, `srt`, `scikit-learn`, `folium`, `pandas`, `plotly`)
+— no es código nuestro que debamos tipar — y comprueba con precisión el
+resto. De paso detectó varios casos reales donde el tipo `float | None` de
+los campos opcionales de `FlightRecord` (no todos los formatos traen todos
+los campos, ver `src/parsers/base.py`) se usaba como si fuera `float` sin
+comprobar antes; se resolvieron con `assert` explícitos justo donde el
+filtro previo ya garantiza que no es `None`, dejando ese razonamiento
+documentado en el propio código en vez de implícito.
+
+También detectó de paso dos fugas reales de descriptor de archivo (el
+lector de ArduPilot y el subproceso de `blackbox_decode` no cerraban el
+archivo explícitamente), ya corregidas.
+
+**Cobertura de tests**: 94% (`pytest --cov=src`), con un umbral de CI en 85%
+como red de seguridad ante una caída grande, no como objetivo a perseguir
+línea a línea.
 
 **Robustez ante archivos raros**: subir un archivo vacío, corrupto, o con la
 extensión equivocada siempre produce un mensaje de error claro (nunca un

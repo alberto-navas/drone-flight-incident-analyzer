@@ -115,6 +115,11 @@ def detect_gps_glitches(flight_log: FlightLog) -> list[FlightEvent]:
         dt = curr.timestamp - prev.timestamp
         if dt <= 0:
             continue
+        # geo_records ya esta filtrada por lat/lon is not None; el assert
+        # solo lo declara para mypy (los campos son Optional a nivel de
+        # tipo porque no TODOS los FlightRecord los traen, ver base.py).
+        assert prev.lat is not None and prev.lon is not None
+        assert curr.lat is not None and curr.lon is not None
         distance = haversine_distance_m(prev.lat, prev.lon, curr.lat, curr.lon)
         implied_speed = distance / dt
         if implied_speed > _MAX_PLAUSIBLE_SPEED_MS:
@@ -148,6 +153,7 @@ def detect_rapid_descents(flight_log: FlightLog) -> list[FlightEvent]:
         dt = curr.timestamp - prev.timestamp
         if dt <= 0:
             continue
+        assert prev.alt is not None and curr.alt is not None  # ver comentario equivalente en detect_gps_glitches
         vertical_rate = (curr.alt - prev.alt) / dt  # negativo = descendiendo
         if vertical_rate < -_IMPACT_DESCENT_RATE_MS:
             events.append(
@@ -180,6 +186,8 @@ def detect_battery_anomalies(flight_log: FlightLog) -> list[FlightEvent]:
         dt = curr.timestamp - prev.timestamp
         if dt <= 0:
             continue
+        # ver comentario equivalente en detect_gps_glitches
+        assert prev.battery_voltage is not None and curr.battery_voltage is not None
         drop_rate = (prev.battery_voltage - curr.battery_voltage) / dt
         if drop_rate > _CRITICAL_VOLTAGE_DROP_RATE:
             events.append(
@@ -213,6 +221,7 @@ def detect_rc_signal_loss(flight_log: FlightLog) -> list[FlightEvent]:
 
     was_low = False
     for r in rc_records:
+        assert r.rc_signal is not None  # ver comentario en detect_gps_glitches
         is_low = r.rc_signal < _LOW_RC_SIGNAL_THRESHOLD
         if is_low and not was_low:
             events.append(

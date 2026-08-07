@@ -10,6 +10,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 from ..parsers.base import FlightLog
+from .geo import extract_geo_points
 from .impact import ImpactEstimate
 
 # Colores fijos por severidad, reutilizados tanto en el mapa como en el
@@ -31,7 +32,7 @@ def build_route_map(flight_log: FlightLog, impact_estimate: ImpactEstimate | Non
     registro de verdad" de "lo que se ha extrapolado".
     """
     records = flight_log.sorted_records()
-    points = [(r.lat, r.lon) for r in records if r.lat is not None and r.lon is not None]
+    points = extract_geo_points(records)
 
     if not points:
         # Sin GPS no hay mapa que dibujar (p.ej. un log Betaflight sin modulo
@@ -57,6 +58,7 @@ def build_route_map(flight_log: FlightLog, impact_estimate: ImpactEstimate | Non
         nearest = min(geo_records, key=lambda r: abs(r.timestamp - event.timestamp), default=None)
         if nearest is None:
             continue
+        assert nearest.lat is not None and nearest.lon is not None  # geo_records ya filtrada por lat/lon
         folium.Marker(
             (nearest.lat, nearest.lon),
             tooltip=f"[{event.severity}] {event.description}",

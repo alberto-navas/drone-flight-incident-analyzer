@@ -60,6 +60,9 @@ def resolve_offset(video_frames: list[VideoTelemetryFrame], flight_log_start_utc
     frame_with_time = next((f for f in video_frames if f.absolute_time is not None), None)
     if frame_with_time is None:
         return None
+    # El filtro del generador de arriba garantiza esto en tiempo de
+    # ejecucion, pero mypy no propaga esa narrowing de "f" a "frame_with_time".
+    assert frame_with_time.absolute_time is not None
 
     seconds_into_log_when_frame_was_recorded = (frame_with_time.absolute_time - flight_log_start_utc).total_seconds()
     return frame_with_time.video_timestamp_s - seconds_into_log_when_frame_was_recorded
@@ -81,6 +84,7 @@ def _cross_check_gps(
     if not geo_records:
         return None
     nearest_log_record = min(geo_records, key=lambda r: abs(r.timestamp - event_timestamp))
+    assert nearest_log_record.lat is not None and nearest_log_record.lon is not None  # geo_records ya filtrada
     return haversine_distance_m(nearest_log_record.lat, nearest_log_record.lon, video_frame.lat, video_frame.lon)
 
 

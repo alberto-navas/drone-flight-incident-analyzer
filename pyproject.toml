@@ -12,3 +12,14 @@ select = ["E", "F", "W", "I", "UP", "B", "SIM"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["src"]
+
+[tool.mypy]
+python_version = "3.12"
+warn_unused_ignores = true
+warn_redundant_casts = true
+# Ninguna de estas 5 librerias publica type stubs (ni un paquete "-stubs"
+# separado que valga la pena instalar solo para esto); son librerias de
+# terceros consolidadas, no codigo nuestro que debamos tipar.
+[[tool.mypy.overrides]]
+module = ["pymavlink.*", "pyulog.*", "srt.*", "sklearn.*", "folium.*", "pandas.*", "plotly.*"]
+ignore_missing_imports = true

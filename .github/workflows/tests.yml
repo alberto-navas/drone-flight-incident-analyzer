@@ -8,21 +8,26 @@ on:
 
 jobs:
   lint:
-    # Job aparte y mas rapido que la matriz de tests: no necesita las
-    # dependencias pesadas del proyecto (pymavlink, scikit-learn...), solo
-    # ruff, asi que corre en un solo SO sin ralentizar el resto de checks.
+    # Job aparte de la matriz de tests, en un solo SO. Instala todas las
+    # dependencias (no solo ruff/mypy) porque mypy necesita poder resolver
+    # los imports de fastapi/slowapi/jinja2 (que si tienen tipos reales)
+    # para comprobar los suyos con precision, aunque las librerias sin
+    # stubs (pymavlink, pyulog, pandas...) esten configuradas para
+    # ignorarse en pyproject.toml.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Instalar ruff
-        run: pip install ruff
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
       - name: Comprobar lint
         run: ruff check .
       - name: Comprobar formato
         run: ruff format --check .
+      - name: Comprobar tipos
+        run: mypy src/
 
   test:
     # Matriz Ubuntu + Windows: el desarrollo se hizo en Windows, pero la
@@ -47,4 +52,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Ejecutar tests
-        run: pytest -v
+        # --cov-fail-under por debajo de la cobertura real (94% en la ultima
+        # medicion) a proposito: es una red de seguridad contra una caida
+        # grande de cobertura, no un gate que se rompa por una linea suelta.
+        run: pytest -v --cov=src --cov-report=term-missing --cov-fail-under=85

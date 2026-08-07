@@ -88,6 +88,12 @@ def estimate_impact(flight_log: FlightLog, mass_kg: float | None = None) -> Impa
     if dt <= 0:
         return None
 
+    # geo_alt_records ya esta filtrada por lat/lon/alt is not None; el
+    # assert solo lo declara para mypy (son Optional a nivel de tipo porque
+    # no todos los FlightRecord los traen, ver parsers/base.py).
+    assert anchor.lat is not None and anchor.lon is not None and anchor.alt is not None
+    assert prev.lat is not None and prev.lon is not None and prev.alt is not None
+
     vertical_speed = (anchor.alt - prev.alt) / dt  # negativo = descendiendo
     horizontal_distance_between = haversine_distance_m(prev.lat, prev.lon, anchor.lat, anchor.lon)
     horizontal_speed = horizontal_distance_between / dt

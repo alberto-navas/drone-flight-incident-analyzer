@@ -12,7 +12,7 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from ..analysis.geo import haversine_distance_m
+from ..analysis.geo import extract_geo_points, haversine_distance_m
 from ..analysis.impact import estimate_impact
 from ..analysis.integrity import check_integrity
 from ..analysis.trajectory import build_route_map, build_telemetry_timeline
@@ -31,10 +31,14 @@ def _compute_summary(flight_log: FlightLog) -> dict:
     limitarse a formatear datos ya calculados, no a hacer logica de negocio.
     """
     records = flight_log.sorted_records()
-    geo_records = [r for r in records if r.lat is not None and r.lon is not None]
+    geo_points = extract_geo_points(records)
 
     total_distance_m = sum(
-        haversine_distance_m(a.lat, a.lon, b.lat, b.lon) for a, b in zip(geo_records, geo_records[1:], strict=False)
+        (
+            haversine_distance_m(lat1, lon1, lat2, lon2)
+            for (lat1, lon1), (lat2, lon2) in zip(geo_points, geo_points[1:], strict=False)
+        ),
+        start=0.0,
     )
 
     altitudes = [r.alt for r in records if r.alt is not None]

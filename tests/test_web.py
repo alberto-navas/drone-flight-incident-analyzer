@@ -120,3 +120,13 @@ def test_analyze_is_rate_limited_per_ip():
         assert statuses.count(429) == 5
     finally:
         limiter.reset()  # no dejar la cuota consumida para tests que se ejecuten despues
+
+
+def test_main_module_is_importable():
+    """
+    src/web/__main__.py solo se ejecuta con `python -m src.web`, nunca se
+    importa desde el resto del codigo. Este test solo confirma que el
+    modulo en si (sus imports a nivel de archivo) no tiene errores — el
+    `if __name__ == "__main__":` no se ejecuta al importarlo asi.
+    """
+    import src.web.__main__  # noqa: F401

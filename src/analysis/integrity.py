@@ -93,7 +93,7 @@ def _check_monotonicity(flight_log: FlightLog) -> list[IntegrityFinding]:
 
 def _check_gaps(flight_log: FlightLog) -> list[IntegrityFinding]:
     """Busca huecos de tiempo anormalmente grandes sin ninguna muestra de telemetria."""
-    findings = []
+    findings: list[IntegrityFinding] = []
     timestamps = sorted(r.timestamp for r in flight_log.records)
     if len(timestamps) < 3:
         return findings  # muy pocas muestras para que "la mediana" signifique algo

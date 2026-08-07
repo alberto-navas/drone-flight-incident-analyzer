@@ -11,7 +11,7 @@ romperse y produce un FlightLog coherente con el modelo comun.
 from src.parsers.ardupilot import parse_ardupilot_log
 from src.parsers.base import Source
 from src.parsers.betaflight import parse_betaflight_csv
-from src.parsers.dji_srt import parse_dji_srt
+from src.parsers.dji_srt import _extract_absolute_time, _extract_position, parse_dji_srt
 from src.parsers.px4 import parse_px4_log
 
 
@@ -68,3 +68,26 @@ def test_parse_dji_srt(fixtures_dir):
     # Los timestamps de video deben ser crecientes (subtitulos en orden).
     timestamps = [f.video_timestamp_s for f in frames]
     assert timestamps == sorted(timestamps)
+
+
+def test_extract_position_recognizes_legacy_dji_format():
+    """Variante antigua (Phantom 4 / Mavic Pro): 'GPS (lon, lat, alt)', orden invertido respecto a la moderna."""
+    legacy_text = "F/2.8, SS 1000, ISO 100, EV 0, GPS (8.5417, 47.3769, 594), D 1.87m, H 10.00m"
+    lat, lon, alt = _extract_position(legacy_text)
+    assert lat == 47.3769
+    assert lon == 8.5417
+    assert alt == 594.0
+
+
+def test_extract_position_returns_none_for_unrecognized_text():
+    lat, lon, alt = _extract_position("texto sin ninguna telemetria reconocible")
+    assert (lat, lon, alt) == (None, None, None)
+
+
+def test_extract_absolute_time_returns_none_when_absent():
+    assert _extract_absolute_time("sin fecha aqui") is None
+
+
+def test_extract_absolute_time_returns_none_for_malformed_date():
+    """Con pinta de fecha pero con un mes invalido (mes 13): no debe reventar, solo devolver None."""
+    assert _extract_absolute_time("2024-13-99 25:99:99") is None

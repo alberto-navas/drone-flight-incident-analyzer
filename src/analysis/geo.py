@@ -1,11 +1,29 @@
 """Utilidades geoespaciales compartidas entre la deteccion de anomalias y el informe."""
 
 import math
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..parsers.base import FlightRecord
 
 # Radio de la Tierra en metros, usado por Haversine. Aproximacion esferica:
 # suficiente para las distancias de un vuelo de dron (no hace falta el
 # modelo elipsoidal WGS84 completo para este caso de uso).
 _EARTH_RADIUS_M = 6_371_000
+
+
+def extract_geo_points(records: "list[FlightRecord]") -> list[tuple[float, float]]:
+    """
+    (lat, lon) de los records que traen ambos campos, en el mismo orden.
+
+    Centraliza un filtro que se repetia identico en varios modulos
+    (trayectoria, mapa combinado de flota, resumen de distancia). De paso
+    resuelve, para mypy, el "narrowing" de lat/lon de `float | None` a
+    `float`: son Optional a nivel de tipo porque no todos los FlightRecord
+    los traen (ver parsers/base.py), pero dentro de esta misma comprension
+    mypy si sabe que el filtro garantiza que no son None.
+    """
+    return [(r.lat, r.lon) for r in records if r.lat is not None and r.lon is not None]
 
 
 def haversine_distance_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
