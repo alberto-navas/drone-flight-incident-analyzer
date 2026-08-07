@@ -18,6 +18,17 @@ from ..analysis.integrity import check_integrity
 from ..analysis.trajectory import build_route_map, build_telemetry_timeline
 from ..analysis.video_sync import SyncedEvent
 from ..parsers.base import FlightLog
+from .i18n import (
+    METHOD_LABELS,
+    SEVERITY_LABELS,
+    labels_for,
+    normalize_lang,
+    translate_assumptions,
+    translate_event,
+    translate_finding,
+    translate_integrity_summary,
+    ui,
+)
 
 _TEMPLATES_DIR = Path(__file__).parent / "templates"
 
@@ -65,6 +76,7 @@ def generate_report(
     output_path: str,
     mass_kg: float | None = None,
     synced_events: list[SyncedEvent] | None = None,
+    lang: str = "es",
 ) -> str:
     """
     Genera el informe HTML de un FlightLog ya parseado (y, idealmente, ya pasado por detect_anomalies).
@@ -81,12 +93,22 @@ def generate_report(
     `synced_events` es opcional: si se aporta (ver src/analysis/video_sync.py),
     el informe incluye una seccion cruzando cada evento con su fotograma de
     video correspondiente y la verificacion cruzada de GPS log-vs-video.
+
+    `lang` ("es"/"en"/"de") controla en que idioma se renderiza TODO el texto
+    del informe: tanto la estructura fija de la plantilla como la descripcion
+    de cada hallazgo concreto, reconstruida en el momento a partir de su
+    message_key (ver src/report/i18n.py). El campo `description` original de
+    cada FlightEvent/IntegrityFinding no se toca (sigue en español, ver
+    parsers/base.py); esta funcion solo decide que texto ENSEÑAR.
     """
+    lang = normalize_lang(lang)
+    strings = ui(lang)
+
     impact = estimate_impact(flight_log, mass_kg=mass_kg)
     integrity = check_integrity(flight_log)
 
-    route_map = build_route_map(flight_log, impact_estimate=impact)
-    timeline_fig = build_telemetry_timeline(flight_log)
+    route_map = build_route_map(flight_log, impact_estimate=impact, lang=lang)
+    timeline_fig = build_telemetry_timeline(flight_log, lang=lang)
 
     # _repr_html_() de folium ya devuelve un <iframe srcdoc="..."> autonomo,
     # lo que evita colisiones de CSS/JS entre el mapa (Leaflet) y el resto
@@ -98,6 +120,51 @@ def generate_report(
     # se pueda abrir sin conexion a internet.
     timeline_html = timeline_fig.to_html(full_html=False, include_plotlyjs=True)
 
+    events = [
+        {
+            "timestamp": event.timestamp,
+            "category": event.category,
+            "severity": event.severity,
+            "description": translate_event(event, lang),
+            "method": event.method,
+        }
+        for event in sorted(flight_log.events, key=lambda e: e.timestamp)
+    ]
+
+    impact_view = None
+    if impact is not None:
+        impact_view = {
+            **impact.__dict__,
+            "assumptions": translate_assumptions(impact.assumption_keys, lang),
+        }
+
+    integrity_view = {
+        "looks_clean": integrity.looks_clean,
+        "summary": translate_integrity_summary(integrity.findings, lang),
+        "findings": [
+            {
+                "kind": finding.kind,
+                "field": finding.field,
+                "timestamp": finding.timestamp,
+                "severity": finding.severity,
+                "description": translate_finding(finding, lang),
+            }
+            for finding in integrity.findings
+        ],
+    }
+
+    synced_events_view = None
+    if synced_events is not None:
+        synced_events_view = [
+            {
+                "flight_event_timestamp": se.flight_event_timestamp,
+                "video_timestamp_s": se.video_timestamp_s,
+                "description": translate_event(se, lang),
+                "gps_cross_check_distance_m": se.gps_cross_check_distance_m,
+            }
+            for se in synced_events
+        ]
+
     env = Environment(
         loader=FileSystemLoader(str(_TEMPLATES_DIR)),
         autoescape=select_autoescape(["html"]),
@@ -105,13 +172,17 @@ def generate_report(
     template = env.get_template("report.html")
 
     rendered = template.render(
+        t=strings,
+        lang=lang,
+        severity_labels=labels_for(SEVERITY_LABELS, lang),
+        method_labels=labels_for(METHOD_LABELS, lang),
         summary=_compute_summary(flight_log),
-        events=sorted(flight_log.events, key=lambda e: e.timestamp),
+        events=events,
         map_html=map_html,
         timeline_html=timeline_html,
-        impact=impact,
-        integrity=integrity,
-        synced_events=synced_events,
+        impact=impact_view,
+        integrity=integrity_view,
+        synced_events=synced_events_view,
         generated_at=datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC"),
     )
 

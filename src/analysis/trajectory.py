@@ -10,6 +10,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 from ..parsers.base import FlightLog
+from ..report.i18n import translate_event, ui
 from .geo import extract_geo_points
 from .impact import ImpactEstimate
 
@@ -18,7 +19,9 @@ from .impact import ImpactEstimate
 _SEVERITY_COLORS = {"info": "blue", "warning": "orange", "critical": "red"}
 
 
-def build_route_map(flight_log: FlightLog, impact_estimate: ImpactEstimate | None = None) -> folium.Map:
+def build_route_map(
+    flight_log: FlightLog, impact_estimate: ImpactEstimate | None = None, lang: str = "es"
+) -> folium.Map:
     """
     Genera un mapa Leaflet con la ruta de vuelo y marcadores de despegue/aterrizaje/eventos.
 
@@ -31,6 +34,7 @@ def build_route_map(flight_log: FlightLog, impact_estimate: ImpactEstimate | Non
     punto de impacto proyectado, para distinguir visualmente "lo que el log
     registro de verdad" de "lo que se ha extrapolado".
     """
+    strings = ui(lang)
     records = flight_log.sorted_records()
     points = extract_geo_points(records)
 
@@ -44,8 +48,8 @@ def build_route_map(flight_log: FlightLog, impact_estimate: ImpactEstimate | Non
     fmap = folium.Map(location=points[len(points) // 2], zoom_start=17)
     folium.PolyLine(points, color="#2b6cb0", weight=3, opacity=0.8).add_to(fmap)
 
-    folium.Marker(points[0], tooltip="Despegue / inicio del log", icon=folium.Icon(color="green")).add_to(fmap)
-    folium.Marker(points[-1], tooltip="Fin del log", icon=folium.Icon(color="black")).add_to(fmap)
+    folium.Marker(points[0], tooltip=strings["map_takeoff"], icon=folium.Icon(color="green")).add_to(fmap)
+    folium.Marker(points[-1], tooltip=strings["map_end"], icon=folium.Icon(color="black")).add_to(fmap)
 
     # Para ubicar cada evento en el mapa, buscamos el record con posicion
     # mas cercano en el tiempo (los eventos no siempre coinciden con una
@@ -61,7 +65,7 @@ def build_route_map(flight_log: FlightLog, impact_estimate: ImpactEstimate | Non
         assert nearest.lat is not None and nearest.lon is not None  # geo_records ya filtrada por lat/lon
         folium.Marker(
             (nearest.lat, nearest.lon),
-            tooltip=f"[{event.severity}] {event.description}",
+            tooltip=f"[{event.severity}] {translate_event(event, lang)}",
             icon=folium.Icon(color=_SEVERITY_COLORS[event.severity]),
         ).add_to(fmap)
 
@@ -77,17 +81,14 @@ def build_route_map(flight_log: FlightLog, impact_estimate: ImpactEstimate | Non
         folium.PolyLine([last_point, impact_point], color="#c53030", weight=3, opacity=0.9, dash_array="8").add_to(fmap)
         folium.Marker(
             impact_point,
-            tooltip=(
-                f"Impacto estimado (proyeccion, no registrado por el log): "
-                f"{impact_estimate.total_speed_at_impact_ms:.1f} m/s"
-            ),
+            tooltip=strings["map_impact_marker"].format(speed=impact_estimate.total_speed_at_impact_ms),
             icon=folium.Icon(color="red", icon="warning-sign"),
         ).add_to(fmap)
 
     return fmap
 
 
-def build_telemetry_timeline(flight_log: FlightLog) -> go.Figure:
+def build_telemetry_timeline(flight_log: FlightLog, lang: str = "es") -> go.Figure:
     """
     Genera una figura Plotly con 3 sub-graficos apilados: altitud, velocidad/bateria y señal RC.
 
@@ -95,6 +96,7 @@ def build_telemetry_timeline(flight_log: FlightLog) -> go.Figure:
     por ejemplo, una caida de voltaje de bateria con una caida de altitud en
     el mismo instante.
     """
+    strings = ui(lang)
     records = flight_log.sorted_records()
 
     def series(field: str):
@@ -111,20 +113,26 @@ def build_telemetry_timeline(flight_log: FlightLog) -> go.Figure:
         rows=3,
         cols=1,
         shared_xaxes=True,
-        subplot_titles=("Altitud (m) y velocidad (m/s)", "Bateria", "Señal de radiocontrol"),
+        subplot_titles=(strings["chart_altitude_speed"], strings["chart_battery"], strings["chart_rc_signal"]),
         vertical_spacing=0.08,
     )
 
     alt_x, alt_y = series("alt")
-    fig.add_trace(go.Scatter(x=alt_x, y=alt_y, name="Altitud (m)", line=dict(color="#2b6cb0")), row=1, col=1)
+    fig.add_trace(
+        go.Scatter(x=alt_x, y=alt_y, name=strings["chart_altitude"], line=dict(color="#2b6cb0")), row=1, col=1
+    )
     speed_x, speed_y = series("groundspeed")
-    fig.add_trace(go.Scatter(x=speed_x, y=speed_y, name="Velocidad (m/s)", line=dict(color="#38a169")), row=1, col=1)
+    fig.add_trace(
+        go.Scatter(x=speed_x, y=speed_y, name=strings["chart_speed"], line=dict(color="#38a169")), row=1, col=1
+    )
 
     volt_x, volt_y = series("battery_voltage")
-    fig.add_trace(go.Scatter(x=volt_x, y=volt_y, name="Voltaje (V)", line=dict(color="#d69e2e")), row=2, col=1)
+    fig.add_trace(
+        go.Scatter(x=volt_x, y=volt_y, name=strings["chart_voltage"], line=dict(color="#d69e2e")), row=2, col=1
+    )
 
     rssi_x, rssi_y = series("rc_signal")
-    fig.add_trace(go.Scatter(x=rssi_x, y=rssi_y, name="Señal RC", line=dict(color="#805ad5")), row=3, col=1)
+    fig.add_trace(go.Scatter(x=rssi_x, y=rssi_y, name=strings["chart_rc"], line=dict(color="#805ad5")), row=3, col=1)
 
     # Las lineas verticales marcan cuando ocurrio cada evento no-informativo,
     # superpuestas a los tres sub-graficos (eje X compartido) para poder
@@ -151,7 +159,9 @@ def build_telemetry_timeline(flight_log: FlightLog) -> go.Figure:
         fig.add_vline(x=event.timestamp, line_dash="dot", line_color=color, row=2, col=1)
         fig.add_vline(x=event.timestamp, line_dash="dot", line_color=color, row=3, col=1)
 
-    fig.update_xaxes(title_text="Tiempo desde el inicio del log (s)", row=3, col=1)
-    fig.update_layout(height=800, showlegend=True, title_text=f"Telemetria — {flight_log.source.value}")
+    fig.update_xaxes(title_text=strings["chart_time_axis"], row=3, col=1)
+    fig.update_layout(
+        height=800, showlegend=True, title_text=strings["chart_telemetry_title"].format(source=flight_log.source.value)
+    )
 
     return fig

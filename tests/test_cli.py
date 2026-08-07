@@ -41,3 +41,31 @@ def test_missing_input_file_exits_with_error(tmp_path):
     with pytest.raises(SystemExit) as exc_info:
         main([str(tmp_path / "no_existe.bin")])
     assert exc_info.value.code != 0
+
+
+def test_lang_flag_translates_individual_report(tmp_path, fixtures_dir):
+    output_path = tmp_path / "report_en.html"
+    exit_code = main([str(fixtures_dir / "mini_ardupilot.bin"), "--output", str(output_path), "--lang", "en"])
+
+    assert exit_code == 0
+    html = output_path.read_text(encoding="utf-8")
+    assert "Flight report" in html
+    assert "Informe de vuelo" not in html
+
+
+def test_lang_flag_translates_fleet_report(tmp_path, fixtures_dir):
+    output_path = tmp_path / "fleet_de.html"
+    exit_code = main(
+        [
+            str(fixtures_dir / "mini_ardupilot.bin"),
+            str(fixtures_dir / "mini_betaflight.csv"),
+            "--output",
+            str(output_path),
+            "--lang",
+            "de",
+        ]
+    )
+
+    assert exit_code == 0
+    html = output_path.read_text(encoding="utf-8")
+    assert "Flottenübersicht" in html

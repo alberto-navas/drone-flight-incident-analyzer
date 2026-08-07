@@ -184,11 +184,14 @@ def _consume_messages(mlog, log: FlightLog) -> None:
                     category="mode_change",
                     severity="info",
                     description=f"Cambio de modo de vuelo a {mode_name}",
+                    message_key="mode_change",
+                    message_params={"mode": mode_name},
                 )
             )
 
         elif msg_type == "ERR":
             subsys = _ERR_SUBSYSTEMS.get(getattr(msg, "Subsys", -1), f"subsys_{getattr(msg, 'Subsys', '?')}")
+            ecode = getattr(msg, "ECode", "?")
             log.events.append(
                 FlightEvent(
                     timestamp=ts,
@@ -197,16 +200,21 @@ def _consume_messages(mlog, log: FlightLog) -> None:
                     # los mensajes que el propio firmware reserva para fallos,
                     # no para informacion rutinaria.
                     severity="critical" if getattr(msg, "ECode", 0) != 0 else "info",
-                    description=f"Error de firmware en subsistema '{subsys}' (codigo {getattr(msg, 'ECode', '?')})",
+                    description=f"Error de firmware en subsistema '{subsys}' (codigo {ecode})",
+                    message_key="firmware_error",
+                    message_params={"subsys": subsys, "code": ecode},
                 )
             )
 
         elif msg_type == "EV":
+            event_id = getattr(msg, "Id", "?")
             log.events.append(
                 FlightEvent(
                     timestamp=ts,
                     category="firmware_event",
                     severity="info",
-                    description=f"Evento de firmware id={getattr(msg, 'Id', '?')}",
+                    description=f"Evento de firmware id={event_id}",
+                    message_key="firmware_event",
+                    message_params={"event_id": event_id},
                 )
             )

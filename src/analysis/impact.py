@@ -60,6 +60,9 @@ class ImpactEstimate:
     total_speed_at_impact_ms: float
     kinetic_energy_j: float | None
     assumptions: list[str]
+    # Claves de src/report/i18n.py:ASSUMPTION_MESSAGES equivalentes a `assumptions`, en el mismo
+    # orden, para poder re-renderizar la lista en otro idioma al generar el informe.
+    assumption_keys: list[str]
 
 
 def estimate_impact(flight_log: FlightLog, mass_kg: float | None = None) -> ImpactEstimate | None:
@@ -131,11 +134,13 @@ def estimate_impact(flight_log: FlightLog, mass_kg: float | None = None) -> Impa
         "resistencia del aire ni posibles maniobras del piloto/autopiloto tras el corte del log.",
         "Velocidad horizontal y rumbo constantes desde la ultima muestra hasta el impacto.",
     ]
+    assumption_keys = ["terrain_flat", "ballistic_simple", "constant_heading"]
     kinetic_energy = None
     if mass_kg is not None:
         kinetic_energy = 0.5 * mass_kg * total_speed**2
     else:
         assumptions.append("No se proporciono la masa del vehiculo: no se calcula energia de impacto.")
+        assumption_keys.append("no_mass")
 
     return ImpactEstimate(
         last_known_timestamp=anchor.timestamp,
@@ -149,4 +154,5 @@ def estimate_impact(flight_log: FlightLog, mass_kg: float | None = None) -> Impa
         total_speed_at_impact_ms=total_speed,
         kinetic_energy_j=kinetic_energy,
         assumptions=assumptions,
+        assumption_keys=assumption_keys,
     )

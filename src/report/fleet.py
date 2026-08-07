@@ -27,6 +27,7 @@ from ..analysis.geo import extract_geo_points, haversine_distance_m
 from ..analysis.impact import estimate_impact
 from ..analysis.integrity import check_integrity
 from ..parsers.base import FlightLog
+from .i18n import normalize_lang, ui
 
 _TEMPLATES_DIR = Path(__file__).parent / "templates"
 
@@ -78,7 +79,7 @@ def _summarize_flight(flight_log: FlightLog, color: str) -> FlightSummary:
     )
 
 
-def _build_legend_html(flight_logs: list[FlightLog], colors: list[str]) -> str:
+def _build_legend_html(flight_logs: list[FlightLog], colors: list[str], lang: str) -> str:
     """
     Construye una leyenda HTML fija, superpuesta al mapa (esquina inferior izquierda).
 
@@ -88,6 +89,7 @@ def _build_legend_html(flight_logs: list[FlightLog], colors: list[str]) -> str:
     que vuelos NO aparecen dibujados porque su log no trae GPS, en vez de
     dejar que parezca que faltan por error.
     """
+    strings = ui(lang)
     entries, missing_gps = [], []
     for flight_log, color in zip(flight_logs, colors, strict=True):
         name = Path(flight_log.source_file).name
@@ -104,15 +106,15 @@ def _build_legend_html(flight_logs: list[FlightLog], colors: list[str]) -> str:
             f'background:{color};margin-right:6px;vertical-align:middle;"></span>{name}</div>'
             for name, color in entries
         )
-        or '<div style="color:#718096;">Ningún vuelo del conjunto trae GPS.</div>'
+        or f'<div style="color:#718096;">{strings["legend_no_gps_at_all"]}</div>'
     )
 
     missing_html = ""
     if missing_gps:
         missing_html = (
             '<div style="margin-top:6px;padding-top:6px;border-top:1px solid #e2e8f0;'
-            'font-size:0.75rem;color:#718096;">Sin GPS en el log (no aparecen en el mapa): '
-            + ", ".join(missing_gps)
+            'font-size:0.75rem;color:#718096;">'
+            + strings["legend_no_gps"].format(names=", ".join(missing_gps))
             + "</div>"
         )
 
@@ -121,16 +123,17 @@ def _build_legend_html(flight_logs: list[FlightLog], colors: list[str]) -> str:
                 padding:10px 14px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.25);
                 font-family:-apple-system,Segoe UI,Roboto,sans-serif;font-size:0.85rem;color:#1a202c;
                 max-width:260px;">
-      <div style="font-weight:600;margin-bottom:6px;">Vuelos</div>
+      <div style="font-weight:600;margin-bottom:6px;">{strings["legend_title"]}</div>
       {rows_html}
-      <div style="margin-top:6px;font-size:0.75rem;color:#718096;">● = punto de inicio del vuelo</div>
+      <div style="margin-top:6px;font-size:0.75rem;color:#718096;">{strings["legend_start_point"]}</div>
       {missing_html}
     </div>
     """
 
 
-def _build_combined_map(flight_logs: list[FlightLog], colors: list[str]) -> folium.Map:
+def _build_combined_map(flight_logs: list[FlightLog], colors: list[str], lang: str) -> folium.Map:
     """Superpone la ruta de cada vuelo en un unico mapa, un color fijo por vuelo, con leyenda."""
+    strings = ui(lang)
     all_points: list[tuple[float, float]] = []
     for flight_log in flight_logs:
         all_points.extend(extract_geo_points(flight_log.sorted_records()))
@@ -146,17 +149,22 @@ def _build_combined_map(flight_logs: list[FlightLog], colors: list[str]) -> foli
         name = Path(flight_log.source_file).name
         folium.PolyLine(points, color=color, weight=3, opacity=0.8, tooltip=name).add_to(fmap)
         folium.CircleMarker(
-            points[0], radius=6, color=color, fill=True, fill_opacity=1, tooltip=f"Inicio — {name}"
+            points[0],
+            radius=6,
+            color=color,
+            fill=True,
+            fill_opacity=1,
+            tooltip=f"{strings['map_flight_start']} — {name}",
         ).add_to(fmap)
 
     # .html existe en tiempo de ejecucion (es la API publica documentada de
     # branca.element.Figure para insertar HTML arbitrario), pero folium no
     # publica stubs de tipos que lo reflejen.
-    fmap.get_root().html.add_child(folium.Element(_build_legend_html(flight_logs, colors)))  # type: ignore[attr-defined]
+    fmap.get_root().html.add_child(folium.Element(_build_legend_html(flight_logs, colors, lang)))  # type: ignore[attr-defined]
     return fmap
 
 
-def _build_anomaly_histogram(flight_logs: list[FlightLog]) -> go.Figure:
+def _build_anomaly_histogram(flight_logs: list[FlightLog], lang: str) -> go.Figure:
     """
     Cuenta cuantas veces aparece cada categoria de anomalia en TODO el conjunto de vuelos.
 
@@ -164,6 +172,7 @@ def _build_anomaly_histogram(flight_logs: list[FlightLog]) -> go.Figure:
     "¿que fallo en este vuelo?" — la pregunta que solo tiene sentido cuando
     se analizan varios vuelos juntos.
     """
+    strings = ui(lang)
     counter: Counter[str] = Counter()
     for flight_log in flight_logs:
         for event in flight_log.events:
@@ -175,31 +184,35 @@ def _build_anomaly_histogram(flight_logs: list[FlightLog]) -> go.Figure:
 
     fig = go.Figure(go.Bar(x=categories, y=counts, marker_color="#2b6cb0"))
     fig.update_layout(
-        title_text="Categorías de anomalía más frecuentes en el conjunto",
-        xaxis_title="Categoría",
-        yaxis_title="Nº de veces detectada",
+        title_text=strings["chart_fleet_categories_title"],
+        xaxis_title=strings["chart_category_axis"],
+        yaxis_title=strings["chart_count_axis"],
         height=400,
     )
     return fig
 
 
-def generate_fleet_report(flight_logs: list[FlightLog], output_path: str) -> str:
+def generate_fleet_report(flight_logs: list[FlightLog], output_path: str, lang: str = "es") -> str:
     """
     Genera el informe comparativo a partir de varios FlightLog ya parseados.
 
     Igual que generate_report(), no ejecuta detect_anomalies aqui: se asume
     que el llamador ya lo hizo sobre cada FlightLog antes de pasarlo.
     """
+    lang = normalize_lang(lang)
+    strings = ui(lang)
     colors = [_ROUTE_COLORS[i % len(_ROUTE_COLORS)] for i in range(len(flight_logs))]
     summaries = [_summarize_flight(fl, color) for fl, color in zip(flight_logs, colors, strict=True)]
 
-    map_html = _build_combined_map(flight_logs, colors)._repr_html_()
-    histogram_html = _build_anomaly_histogram(flight_logs).to_html(full_html=False, include_plotlyjs=True)
+    map_html = _build_combined_map(flight_logs, colors, lang)._repr_html_()
+    histogram_html = _build_anomaly_histogram(flight_logs, lang).to_html(full_html=False, include_plotlyjs=True)
 
     env = Environment(loader=FileSystemLoader(str(_TEMPLATES_DIR)), autoescape=select_autoescape(["html"]))
     template = env.get_template("fleet_report.html")
 
     rendered = template.render(
+        t=strings,
+        lang=lang,
         flights=summaries,
         flight_count=len(flight_logs),
         total_critical=sum(s.critical_events for s in summaries),

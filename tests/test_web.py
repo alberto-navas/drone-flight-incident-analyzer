@@ -132,6 +132,34 @@ def test_main_module_is_importable():
     import src.web.__main__  # noqa: F401
 
 
+def test_analyze_with_lang_translates_the_report():
+    with open("tests/fixtures/mini_ardupilot.bin", "rb") as f:
+        response = client.post(
+            "/analyze",
+            files={"files": ("mini_ardupilot.bin", f, "application/octet-stream")},
+            data={"lang": "de"},
+        )
+    assert response.status_code == 200
+    assert "Flugbericht" in response.text
+
+
+def test_analyze_with_unsupported_lang_falls_back_to_spanish():
+    """
+    lang llega de un campo oculto controlado por JS (ver upload.html), pero
+    nada impide que alguien lo mande a mano con un valor fuera de es/en/de.
+    normalize_lang() (src/report/i18n.py) debe caer a "es" en vez de romper
+    la peticion.
+    """
+    with open("tests/fixtures/mini_ardupilot.bin", "rb") as f:
+        response = client.post(
+            "/analyze",
+            files={"files": ("mini_ardupilot.bin", f, "application/octet-stream")},
+            data={"lang": "fr"},
+        )
+    assert response.status_code == 200
+    assert "Informe de vuelo" in response.text
+
+
 def test_upload_form_has_language_switcher_and_info_modal():
     """
     El cambio de idioma y la ventana de info son 100% del lado del cliente

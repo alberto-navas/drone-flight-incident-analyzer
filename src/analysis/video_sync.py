@@ -27,6 +27,7 @@ señal de que algo no cuadra — la misma lógica de fondo que
 src/analysis/integrity.py, aplicada a una fuente de datos externa al log.
 """
 
+import dataclasses
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -41,8 +42,15 @@ class SyncedEvent:
 
     flight_event_timestamp: float
     video_timestamp_s: float | None
-    description: str
+    description: str  # siempre en español; ver message_key para re-renderizar en otro idioma
     gps_cross_check_distance_m: float | None
+    message_key: str | None = None
+    message_params: dict = dataclasses.field(default_factory=dict)
+    # Presentes solo para que translate_event() (src/report/i18n.py) pueda tratar un
+    # SyncedEvent igual que un FlightEvent sin distinguir tipos; un SyncedEvent nunca
+    # representa un episodio fusionado, asi que siempre quedan a None.
+    episode_duration_s: float | None = None
+    episode_sample_count: int | None = None
 
 
 def resolve_offset(video_frames: list[VideoTelemetryFrame], flight_log_start_utc: datetime | None) -> float | None:
@@ -112,6 +120,8 @@ def sync_events_with_video(
                 video_timestamp_s=nearest_frame.video_timestamp_s if nearest_frame else None,
                 description=event.description,
                 gps_cross_check_distance_m=_cross_check_gps(flight_log, event.timestamp, nearest_frame),
+                message_key=event.message_key,
+                message_params=event.message_params,
             )
         )
     return synced

@@ -87,6 +87,7 @@
 
   <section>
     <form id="analyze-form" action="/analyze" method="post" enctype="multipart/form-data">
+      <input type="hidden" id="lang-field" name="lang" value="es">
       <label for="files" data-i18n="files_label">Log(s) de vuelo</label>
       <input type="file" id="files" name="files" multiple required>
       <div class="formats">
@@ -223,6 +224,9 @@
     document.querySelectorAll('.lang-btn').forEach(function (btn) {
       btn.setAttribute('aria-pressed', btn.getAttribute('data-lang') === lang ? 'true' : 'false');
     });
+
+    var langField = document.getElementById('lang-field');
+    if (langField) langField.value = lang;
 
     try { localStorage.setItem('drone-analyzer-lang', lang); } catch (e) { /* almacenamiento no disponible: no es critico, simplemente no se recuerda la eleccion */ }
   }

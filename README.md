@@ -146,6 +146,9 @@ python -m src.cli data/samples/ardupilot/vuelo.bin --mass-kg 1.5
 # Cruzando con video DJI (offset calibrado a mano, en segundos)
 python -m src.cli data/samples/betaflight/vuelo.csv --format betaflight --video-srt vuelo.srt --video-offset 2.3
 
+# Informe en otro idioma (es / en / de; por defecto es)
+python -m src.cli data/samples/ardupilot/vuelo.bin --lang en
+
 # Panel de flota (varios logs a la vez)
 python -m src.cli data/samples/ardupilot/*.bin --output output/flota.html
 ```
@@ -173,11 +176,14 @@ para que el plan gratuito de Render no se quede sin recursos si alguien lo
 satura. Pasado el límite, responde `429` en vez de degradarse o caerse.
 
 **Idioma**: selector ES/EN/DE arriba a la derecha, y un botón "i" con una
-ventana explicando qué hace la herramienta, también en los 3 idiomas. Es
-una única página con las 3 traducciones embebidas en JavaScript (sin
-recargar ni tocar el backend) — para una página de una sola pantalla es
-más simple que enrutar idiomas en FastAPI, y la elección se recuerda entre
-visitas (`localStorage`).
+ventana explicando qué hace la herramienta, también en los 3 idiomas. La
+página de subida es una única página con las 3 traducciones embebidas en
+JavaScript (sin recargar), y la elección se recuerda entre visitas
+(`localStorage`). El idioma elegido viaja también al backend (campo oculto
+del formulario / flag `--lang` en el CLI): el informe generado — títulos,
+tablas, y la descripción de cada hallazgo concreto (p. ej. "descenso de
+12.0 m/s", reconstruida en el momento a partir de su plantilla, no solo la
+estructura fija) — sale igualmente en el idioma elegido (`src/report/i18n.py`).
 
 **Desplegado en [Render](https://render.com)** (plan gratuito) vía `render.yaml`:
 **https://drone-flight-incident-analyzer.onrender.com**. Sin estado

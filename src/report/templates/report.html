@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="{{ lang }}">
 <head>
 <meta charset="UTF-8">
-<title>Informe de vuelo — {{ summary.source_file }}</title>
+<title>{{ t.report_title }} — {{ summary.source_file }}</title>
 <style>
   /* Sistema de diseño compartido por los tres HTML del proyecto (informe
      individual, panel de flota, formulario web): paleta anclada en el
@@ -111,64 +111,60 @@
 <div class="page">
 
 <header class="report-header">
-  <h1>Informe de vuelo — análisis forense</h1>
-  <p class="meta">Generado el {{ generated_at }} · Fuente: {{ summary.source_format }} · <code>{{ summary.source_file }}</code></p>
+  <h1>{{ t.report_h1 }}</h1>
+  <p class="meta">{{ t.meta_generated.format(date=generated_at, source_format=summary.source_format, source_file=summary.source_file) }}</p>
   {% if summary.events_by_severity.critical > 0 %}
-    <span class="tag tag-critical">Hallazgos críticos</span>
+    <span class="tag tag-critical">{{ t.status_critical }}</span>
   {% elif summary.events_by_severity.warning > 0 %}
-    <span class="tag tag-warning">Advertencias</span>
+    <span class="tag tag-warning">{{ t.status_warning }}</span>
   {% else %}
-    <span class="tag tag-clean">Nominal</span>
+    <span class="tag tag-clean">{{ t.status_clean }}</span>
   {% endif %}
 </header>
 
 <div class="stat-grid">
-  <div class="stat"><div class="label">Duración</div><div class="value">{{ "%.0f"|format(summary.duration_seconds) }} s</div></div>
-  <div class="stat"><div class="label">Distancia recorrida</div><div class="value">{{ "%.0f"|format(summary.total_distance_m) }} m</div></div>
-  <div class="stat"><div class="label">Altitud máxima</div>
+  <div class="stat"><div class="label">{{ t.stat_duration }}</div><div class="value">{{ "%.0f"|format(summary.duration_seconds) }} s</div></div>
+  <div class="stat"><div class="label">{{ t.stat_distance }}</div><div class="value">{{ "%.0f"|format(summary.total_distance_m) }} m</div></div>
+  <div class="stat"><div class="label">{{ t.stat_max_altitude }}</div>
     <div class="value">{% if summary.max_altitude_m is not none %}{{ "%.1f"|format(summary.max_altitude_m) }} m{% else %}—{% endif %}</div>
   </div>
-  <div class="stat"><div class="label">Velocidad máxima</div>
+  <div class="stat"><div class="label">{{ t.stat_max_speed }}</div>
     <div class="value">{% if summary.max_speed_ms is not none %}{{ "%.1f"|format(summary.max_speed_ms) }} m/s{% else %}—{% endif %}</div>
   </div>
-  <div class="stat stat-critical"><div class="label">Eventos críticos</div><div class="value">{{ summary.events_by_severity.critical }}</div></div>
-  <div class="stat stat-warning"><div class="label">Advertencias</div><div class="value">{{ summary.events_by_severity.warning }}</div></div>
+  <div class="stat stat-critical"><div class="label">{{ t.stat_critical_events }}</div><div class="value">{{ summary.events_by_severity.critical }}</div></div>
+  <div class="stat stat-warning"><div class="label">{{ t.stat_warnings }}</div><div class="value">{{ summary.events_by_severity.warning }}</div></div>
 </div>
 
 <section>
-  <h2><span class="sec-num">01</span>Ruta de vuelo</h2>
+  <h2><span class="sec-num">01</span>{{ t.sec_route }}</h2>
   <div class="figure">
     {{ map_html | safe }}
     {% if impact %}
-    <p class="figure-caption">La línea discontinua roja es el tramo EXTRAPOLADO tras el último dato real del log — ver "03 · Estimación de impacto".</p>
+    <p class="figure-caption">{{ t.route_extrapolated_note }}</p>
     {% endif %}
   </div>
 </section>
 
 <section>
-  <h2><span class="sec-num">02</span>Telemetría</h2>
+  <h2><span class="sec-num">02</span>{{ t.sec_telemetry }}</h2>
   <div class="figure">{{ timeline_html | safe }}</div>
 </section>
 
 {% if impact %}
 <section>
-  <h2><span class="sec-num">03</span>Estimación de impacto</h2>
-  <p class="note">
-    El log termina en t={{ "%.1f"|format(impact.last_known_timestamp) }}s en pleno descenso, antes de tocar
-    el suelo. Lo siguiente es una PROYECCIÓN física a partir de esa última trayectoria conocida, no un dato
-    registrado por el dron.
-  </p>
+  <h2><span class="sec-num">03</span>{{ t.sec_impact }}</h2>
+  <p class="note">{{ t.impact_note.format(last_ts=impact.last_known_timestamp) }}</p>
   <div class="impact-grid">
-    <div class="stat"><div class="label">Tiempo hasta el impacto</div><div class="value">{{ "%.1f"|format(impact.time_to_impact_s) }} s</div></div>
-    <div class="stat"><div class="label">Posición estimada</div><div class="value" style="font-size:1rem;">{{ "%.5f"|format(impact.lat) }}, {{ "%.5f"|format(impact.lon) }}</div></div>
-    <div class="stat"><div class="label">Velocidad vertical al impacto</div><div class="value">{{ "%.1f"|format(impact.vertical_speed_at_impact_ms) }} m/s</div></div>
-    <div class="stat"><div class="label">Velocidad total al impacto</div><div class="value">{{ "%.1f"|format(impact.total_speed_at_impact_ms) }} m/s</div></div>
+    <div class="stat"><div class="label">{{ t.impact_time_to }}</div><div class="value">{{ "%.1f"|format(impact.time_to_impact_s) }} s</div></div>
+    <div class="stat"><div class="label">{{ t.impact_position }}</div><div class="value" style="font-size:1rem;">{{ "%.5f"|format(impact.lat) }}, {{ "%.5f"|format(impact.lon) }}</div></div>
+    <div class="stat"><div class="label">{{ t.impact_vspeed }}</div><div class="value">{{ "%.1f"|format(impact.vertical_speed_at_impact_ms) }} m/s</div></div>
+    <div class="stat"><div class="label">{{ t.impact_tspeed }}</div><div class="value">{{ "%.1f"|format(impact.total_speed_at_impact_ms) }} m/s</div></div>
     {% if impact.kinetic_energy_j is not none %}
-    <div class="stat"><div class="label">Energía cinética estimada</div><div class="value">{{ "%.0f"|format(impact.kinetic_energy_j) }} J</div></div>
+    <div class="stat"><div class="label">{{ t.impact_energy }}</div><div class="value">{{ "%.0f"|format(impact.kinetic_energy_j) }} J</div></div>
     {% endif %}
   </div>
   <div class="callout">
-    <strong>Asunciones de esta estimación</strong> (léase antes de citar estos números):
+    <strong>{{ t.impact_assumptions_title }}</strong>
     <ul>
     {% for assumption in impact.assumptions %}
       <li>{{ assumption }}</li>
@@ -180,15 +176,11 @@
 
 {% if synced_events %}
 <section>
-  <h2><span class="sec-num">04</span>Sincronización con vídeo</h2>
-  <p class="note">
-    Cada evento del log correlacionado con su fotograma de vídeo más cercano. La columna "GPS log vs. vídeo"
-    compara la posición que dice el log del autopiloto con la que dice el archivo de subtítulos del vídeo en
-    ese mismo instante — dos fuentes de GPS independientes que, si no coinciden, merece la pena revisar.
-  </p>
+  <h2><span class="sec-num">04</span>{{ t.sec_video }}</h2>
+  <p class="note">{{ t.video_note }}</p>
   <div class="table-wrap">
   <table>
-    <thead><tr><th class="num">Tiempo log (s)</th><th class="num">Tiempo vídeo (s)</th><th>Evento</th><th class="num">GPS log vs. vídeo</th></tr></thead>
+    <thead><tr><th class="num">{{ t.th_time_log }}</th><th class="num">{{ t.th_time_video }}</th><th>{{ t.th_event }}</th><th class="num">{{ t.th_gps_cross_check }}</th></tr></thead>
     <tbody>
     {% for s in synced_events %}
       <tr>
@@ -207,49 +199,46 @@
 {% endif %}
 
 <section>
-  <h2><span class="sec-num">05</span>Línea de tiempo de eventos</h2>
+  <h2><span class="sec-num">05</span>{{ t.sec_events }}</h2>
   <div class="table-wrap">
   <table>
-    <thead><tr><th class="num">Tiempo (s)</th><th>Severidad</th><th>Origen</th><th>Categoría</th><th>Descripción</th></tr></thead>
+    <thead><tr><th class="num">{{ t.th_time }}</th><th>{{ t.th_severity }}</th><th>{{ t.th_origin }}</th><th>{{ t.th_category }}</th><th>{{ t.th_description }}</th></tr></thead>
     <tbody>
     {% for event in events %}
       <tr>
         <td class="num">{{ "%.1f"|format(event.timestamp) }}</td>
-        <td class="sev-{{ event.severity }}">{{ event.severity }}</td>
-        <td>{% if event.method == "ml" %}<span class="tag tag-ml" title="Detectado por Isolation Forest, no por una regla explícita">ML</span>{% else %}<span class="tag tag-rule">regla</span>{% endif %}</td>
+        <td class="sev-{{ event.severity }}">{{ severity_labels[event.severity] }}</td>
+        <td>{% if event.method == "ml" %}<span class="tag tag-ml">{{ method_labels.ml }}</span>{% else %}<span class="tag tag-rule">{{ method_labels.rule }}</span>{% endif %}</td>
         <td>{{ event.category }}</td>
         <td>{{ event.description }}</td>
       </tr>
     {% else %}
-      <tr><td colspan="5">No se detectaron eventos.</td></tr>
+      <tr><td colspan="5">{{ t.no_events }}</td></tr>
     {% endfor %}
     </tbody>
   </table>
   </div>
-  <p class="note" style="margin: 0.75rem 0 0 0;">
-    "regla" = detectado por un umbral explicable (ver código); "ML" = patrón estadísticamente anómalo detectado por
-    un modelo entrenado solo con este vuelo — merece más revisión humana antes de sacar conclusiones.
-  </p>
+  <p class="note" style="margin: 0.75rem 0 0 0;">{{ t.events_legend }}</p>
 </section>
 
 <section>
-  <h2><span class="sec-num">06</span>Verificación de integridad
+  <h2><span class="sec-num">06</span>{{ t.sec_integrity }}
     {% if integrity.looks_clean %}
-      <span class="tag tag-clean">sin indicios</span>
+      <span class="tag tag-clean">{{ t.integrity_clean_badge }}</span>
     {% else %}
-      <span class="tag tag-critical">{{ integrity.findings|length }} indicio(s)</span>
+      <span class="tag tag-critical">{{ integrity.findings|length }}</span>
     {% endif %}
   </h2>
   <p class="note">{{ integrity.summary }}</p>
   {% if integrity.findings %}
   <div class="table-wrap">
   <table>
-    <thead><tr><th class="num">Tiempo (s)</th><th>Severidad</th><th>Tipo</th><th>Descripción</th></tr></thead>
+    <thead><tr><th class="num">{{ t.th_time }}</th><th>{{ t.th_severity }}</th><th>{{ t.th_type }}</th><th>{{ t.th_description }}</th></tr></thead>
     <tbody>
     {% for finding in integrity.findings %}
       <tr>
         <td class="num">{{ "%.1f"|format(finding.timestamp) }}</td>
-        <td class="sev-{{ finding.severity }}">{{ finding.severity }}</td>
+        <td class="sev-{{ finding.severity }}">{{ severity_labels[finding.severity] }}</td>
         <td>{{ finding.kind }}{% if finding.field %} ({{ finding.field }}){% endif %}</td>
         <td>{{ finding.description }}</td>
       </tr>

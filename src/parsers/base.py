@@ -64,12 +64,24 @@ class FlightEvent:
     # "rc_loss" | "battery_critical" | "gps_glitch" | "mode_change" | "possible_impact" | "ml_anomaly_*" | ...
     category: str
     severity: str  # "info" | "warning" | "critical"
-    description: str
+    description: str  # siempre en español; ver message_key para re-renderizar en otro idioma
     # "rule" (regla explicita, incluye los que vienen del propio firmware) o
     # "ml" (modelo estadistico). Sirve para que el informe distinga
     # visualmente un hallazgo justificable por una regla concreta de uno
     # detectado por patron estadistico, que merece mas escrutinio humano.
     method: str = "rule"
+    # Clave de plantilla en src/report/i18n.py + valores para rellenarla, usadas
+    # para reconstruir `description` en otro idioma al generar el informe. None
+    # cuando la descripcion es texto libre que no tiene sentido traducir (p.ej.
+    # un mensaje de log citado tal cual del firmware de PX4).
+    message_key: str | None = None
+    message_params: dict = field(default_factory=dict)
+    # Rellenados por consolidate_episodes() (src/analysis/anomalies.py) cuando
+    # varias muestras consecutivas del mismo hallazgo se fusionan en un unico
+    # episodio, para poder añadir el sufijo "sostenido durante Xs (N muestras)"
+    # en el idioma del informe en vez de dejarlo fijo en español dentro de description.
+    episode_duration_s: float | None = None
+    episode_sample_count: int | None = None
 
 
 @dataclass

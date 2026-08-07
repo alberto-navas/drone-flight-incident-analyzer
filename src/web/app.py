@@ -30,6 +30,7 @@ from ..parsers.base import FlightLog
 from ..pipeline import parse_log
 from ..report.fleet import generate_fleet_report
 from ..report.generator import generate_report
+from ..report.i18n import normalize_lang
 
 _TEMPLATES_DIR = Path(__file__).parent / "templates"
 
@@ -109,9 +110,18 @@ async def analyze(
     request: Request,  # requerido por @limiter.limit para identificar al cliente (IP), no se usa directamente aqui
     files: list[UploadFile] = File(...),  # noqa: B008 — patron estandar de FastAPI, no una llamada real en cada request
     mass_kg: float | None = Form(None),
+    lang: str = Form("es"),
 ):
     if not files:
         raise HTTPException(status_code=400, detail="No se subio ningun archivo.")
+
+    # normalize_lang() cae a "es" ante cualquier valor que no sea uno de los
+    # 3 idiomas soportados, en vez de fallar: el campo llega de un <input
+    # type="hidden"> controlado por el propio JS de upload.html (ver
+    # applyLanguage()), pero no hay razon para que un valor inesperado (o
+    # manipulado a mano) rompa el analisis en vez de simplemente usar el
+    # idioma por defecto.
+    lang = normalize_lang(lang)
 
     with tempfile.TemporaryDirectory() as tmp_dir_name:
         tmp_dir = Path(tmp_dir_name)
@@ -126,9 +136,9 @@ async def analyze(
 
         output_path = tmp_dir / "report.html"
         if len(flight_logs) == 1:
-            generate_report(flight_logs[0], str(output_path), mass_kg=mass_kg)
+            generate_report(flight_logs[0], str(output_path), mass_kg=mass_kg, lang=lang)
         else:
-            generate_fleet_report(flight_logs, str(output_path))
+            generate_fleet_report(flight_logs, str(output_path), lang=lang)
 
         # Se lee el HTML a memoria ANTES de que el directorio temporal se
         # borre al salir del "with": el archivo en si no necesita

@@ -83,16 +83,18 @@ def consolidate_episodes(events: list[FlightEvent]) -> list[FlightEvent]:
             merged.append(first)
             continue
         worst_severity = max((e.severity for e in episode), key=lambda s: _SEVERITY_RANK[s])
+        duration = last.timestamp - first.timestamp
         merged.append(
             FlightEvent(
                 timestamp=first.timestamp,
                 category=first.category,
                 severity=worst_severity,
-                description=(
-                    f"{first.description} — sostenido durante "
-                    f"{last.timestamp - first.timestamp:.1f}s ({len(episode)} muestras)"
-                ),
+                description=(f"{first.description} — sostenido durante {duration:.1f}s ({len(episode)} muestras)"),
                 method=first.method,
+                message_key=first.message_key,
+                message_params=first.message_params,
+                episode_duration_s=duration,
+                episode_sample_count=len(episode),
             )
         )
     return merged
@@ -132,6 +134,8 @@ def detect_gps_glitches(flight_log: FlightLog) -> list[FlightEvent]:
                         f"Salto de posicion GPS implica velocidad de {implied_speed:.1f} m/s "
                         f"(umbral: {_MAX_PLAUSIBLE_SPEED_MS} m/s); probable glitch de receptor, no movimiento real."
                     ),
+                    message_key="gps_glitch",
+                    message_params={"speed": implied_speed, "threshold": _MAX_PLAUSIBLE_SPEED_MS},
                 )
             )
     return consolidate_episodes(events)
@@ -165,6 +169,8 @@ def detect_rapid_descents(flight_log: FlightLog) -> list[FlightEvent]:
                         f"Descenso de {abs(vertical_rate):.1f} m/s "
                         f"(umbral: {_IMPACT_DESCENT_RATE_MS} m/s); posible caida o perdida de control."
                     ),
+                    message_key="possible_impact",
+                    message_params={"rate": abs(vertical_rate), "threshold": _IMPACT_DESCENT_RATE_MS},
                 )
             )
     return consolidate_episodes(events)
@@ -199,6 +205,8 @@ def detect_battery_anomalies(flight_log: FlightLog) -> list[FlightEvent]:
                         f"Caida de voltaje de {drop_rate:.2f} V/s "
                         f"(umbral: {_CRITICAL_VOLTAGE_DROP_RATE} V/s); posible fallo de celda o cortocircuito."
                     ),
+                    message_key="battery_critical",
+                    message_params={"rate": drop_rate, "threshold": _CRITICAL_VOLTAGE_DROP_RATE},
                 )
             )
     return events
@@ -230,6 +238,8 @@ def detect_rc_signal_loss(flight_log: FlightLog) -> list[FlightEvent]:
                     category="rc_loss",
                     severity="warning",
                     description=f"Señal RC cayo a {r.rc_signal:.0f} (umbral: {_LOW_RC_SIGNAL_THRESHOLD})",
+                    message_key="rc_signal_low",
+                    message_params={"signal": r.rc_signal, "threshold": _LOW_RC_SIGNAL_THRESHOLD},
                 )
             )
         was_low = is_low

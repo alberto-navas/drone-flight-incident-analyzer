@@ -65,6 +65,41 @@ def test_generate_fleet_report_combines_multiple_flights(tmp_path, synthetic_fli
     assert "second.ulog" in html
 
 
+def test_generate_report_translates_structure_and_dynamic_findings(tmp_path):
+    """
+    Cubre el caso que motivo el modulo de i18n: no basta con traducir la
+    estructura fija de la plantilla, la descripcion de cada hallazgo
+    concreto (generada dinamicamente en anomalies.py a partir de un
+    message_key) tambien debe salir en el idioma pedido.
+    """
+    log = FlightLog(source=Source.ARDUPILOT, source_file="crash.bin")
+    log.records.append(FlightRecord(timestamp=0.0, lat=47.0, lon=8.0, alt=51.0))
+    log.records.append(FlightRecord(timestamp=0.1, lat=47.000004, lon=8.0, alt=50.0))
+    detect_anomalies(log)
+    output_path = tmp_path / "crash_report_en.html"
+
+    generate_report(log, str(output_path), mass_kg=1.5, lang="en")
+
+    html = output_path.read_text(encoding="utf-8")
+    assert "Flight report" in html  # estructura fija de la plantilla
+    assert "Impact estimate" in html
+    assert "Estimated kinetic energy" in html
+    assert "possible crash or loss of control" in html  # hallazgo dinamico (message_key="possible_impact")
+    assert "Descenso de" not in html  # no debe quedar nada en español
+
+
+def test_generate_fleet_report_translates_to_german(tmp_path, synthetic_flight_log):
+    second_log = FlightLog(source=Source.PX4, source_file="second.ulog")
+    second_log.records.append(FlightRecord(timestamp=0.0, roll=0.0, pitch=0.0, yaw=0.0))
+    output_path = tmp_path / "fleet_de.html"
+
+    generate_fleet_report([synthetic_flight_log, second_log], str(output_path), lang="de")
+
+    html = output_path.read_text(encoding="utf-8")
+    assert "Flottenübersicht" in html
+    assert "Panel de flota" not in html
+
+
 def test_generate_report_shows_ml_badge_for_ml_events(tmp_path, synthetic_flight_log):
     synthetic_flight_log.events.append(
         FlightEvent(

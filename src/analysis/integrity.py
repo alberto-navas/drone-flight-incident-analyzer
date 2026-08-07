@@ -11,6 +11,7 @@ segun estos chequeos esta garantizado autentico, ni un indicio aislado
 prueba manipulacion (podria ser, por ejemplo, una perdida de señal real).
 """
 
+import dataclasses
 from dataclasses import dataclass
 
 from ..parsers.base import FlightLog
@@ -42,7 +43,9 @@ class IntegrityFinding:
     field: str | None
     timestamp: float
     severity: str  # "warning" | "critical"
-    description: str
+    description: str  # siempre en español; ver message_key para re-renderizar en otro idioma (src/report/i18n.py)
+    message_key: str | None = None
+    message_params: dict = dataclasses.field(default_factory=dict)
 
 
 @dataclass
@@ -85,6 +88,8 @@ def _check_monotonicity(flight_log: FlightLog) -> list[IntegrityFinding]:
                             f"t={record.timestamp:.2f}s llega despues de otra en t={last_ts:.2f}s dentro del "
                             "mismo archivo. Puede indicar un log editado/empalmado, o corrupcion del archivo."
                         ),
+                        message_key="time_reversal",
+                        message_params={"field": field_name, "ts": record.timestamp, "last_ts": last_ts},
                     )
                 )
             last_ts = record.timestamp
@@ -121,6 +126,8 @@ def _check_gaps(flight_log: FlightLog) -> list[IntegrityFinding]:
                         f"frente a una cadencia habitual de ~{median_gap:.2f}s entre muestras. Puede ser una "
                         "perdida de señal real, o un tramo del log eliminado."
                     ),
+                    message_key="suspicious_gap",
+                    message_params={"gap": gap, "a": a, "b": b, "median": median_gap},
                 )
             )
     return findings

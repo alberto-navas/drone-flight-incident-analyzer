@@ -101,6 +101,12 @@ def main(argv: list[str] | None = None) -> int:
             "equivalente (calibrado a mano). Requiere --video-srt."
         ),
     )
+    parser.add_argument(
+        "--lang",
+        choices=["es", "en", "de"],
+        default="es",
+        help="Idioma del informe HTML generado (por defecto: es).",
+    )
     args = parser.parse_args(argv)
 
     if args.video_srt is not None and len(args.inputs) != 1:
@@ -123,14 +129,14 @@ def main(argv: list[str] | None = None) -> int:
             synced_events = sync_events_with_video(flight_log, video_frames, offset_s=args.video_offset)
 
         print(f"Generando informe en {output_path}...")
-        generate_report(flight_log, str(output_path), mass_kg=args.mass_kg, synced_events=synced_events)
+        generate_report(flight_log, str(output_path), mass_kg=args.mass_kg, synced_events=synced_events, lang=args.lang)
     else:
         output_path = args.output or (Path("output") / "fleet_report.html")
 
         flight_logs = [_parse_and_analyze(input_path, args.format) for input_path in args.inputs]
 
         print(f"Generando panel de flota ({len(flight_logs)} vuelos) en {output_path}...")
-        generate_fleet_report(flight_logs, str(output_path))
+        generate_fleet_report(flight_logs, str(output_path), lang=args.lang)
 
     print("Listo.")
     return 0

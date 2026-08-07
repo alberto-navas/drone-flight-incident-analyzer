@@ -164,6 +164,12 @@ def detect_ml_anomalies(flight_log: FlightLog) -> list[FlightEvent]:
                     f"({row[top_feature]:.2f}, {z_scores[top_feature]:.1f} desviaciones estándar)."
                 ),
                 method="ml",
+                message_key="ml_anomaly",
+                message_params={
+                    "feature": top_feature,
+                    "value": row[top_feature],
+                    "z_score": z_scores[top_feature],
+                },
             )
         )
 

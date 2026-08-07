@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="{{ lang }}">
 <head>
 <meta charset="UTF-8">
-<title>Panel de flota — {{ flight_count }} vuelos analizados</title>
+<title>{{ t.fleet_title }} — {{ flight_count }}</title>
 <style>
   /* Mismo sistema de diseño que report.html (ver comentario alli): paleta
      anclada en el naranja internacional de "caja negra" para lo critico,
@@ -64,42 +64,42 @@
 <body>
 <div class="page">
 
-<h1>Panel de flota — análisis comparativo</h1>
-<p class="meta">Generado el {{ generated_at }} · {{ flight_count }} vuelos analizados conjuntamente</p>
+<h1>{{ t.fleet_h1 }}</h1>
+<p class="meta">{{ t.fleet_meta.format(date=generated_at, n=flight_count) }}</p>
 
 <div class="stat-grid">
-  <div class="stat"><div class="label">Vuelos analizados</div><div class="value">{{ flight_count }}</div></div>
-  <div class="stat stat-critical"><div class="label">Eventos críticos (total)</div><div class="value">{{ total_critical }}</div></div>
-  <div class="stat stat-warning"><div class="label">Advertencias (total)</div><div class="value">{{ total_warning }}</div></div>
-  <div class="stat"><div class="label">Vuelos con posible impacto</div><div class="value">{{ flights_with_impact }}</div></div>
-  <div class="stat"><div class="label">Vuelos con indicios de integridad</div><div class="value">{{ flights_with_integrity_issues }}</div></div>
+  <div class="stat"><div class="label">{{ t.fleet_stat_flights }}</div><div class="value">{{ flight_count }}</div></div>
+  <div class="stat stat-critical"><div class="label">{{ t.fleet_stat_critical }}</div><div class="value">{{ total_critical }}</div></div>
+  <div class="stat stat-warning"><div class="label">{{ t.fleet_stat_warning }}</div><div class="value">{{ total_warning }}</div></div>
+  <div class="stat"><div class="label">{{ t.fleet_stat_impact }}</div><div class="value">{{ flights_with_impact }}</div></div>
+  <div class="stat"><div class="label">{{ t.fleet_stat_integrity }}</div><div class="value">{{ flights_with_integrity_issues }}</div></div>
 </div>
 
 <section>
-  <h2><span class="sec-num">01</span>Rutas combinadas</h2>
+  <h2><span class="sec-num">01</span>{{ t.fleet_sec_routes }}</h2>
   <div class="figure">{{ map_html | safe }}</div>
 </section>
 
 <section>
-  <h2><span class="sec-num">02</span>Patrones de fallo en el conjunto</h2>
+  <h2><span class="sec-num">02</span>{{ t.fleet_sec_patterns }}</h2>
   <div class="figure">{{ histogram_html | safe }}</div>
 </section>
 
 <section>
-  <h2><span class="sec-num">03</span>Comparativa de vuelos</h2>
+  <h2><span class="sec-num">03</span>{{ t.fleet_sec_comparison }}</h2>
   <div class="table-wrap">
   <table>
     <thead>
       <tr>
         <th></th>
-        <th>Archivo</th>
-        <th>Formato</th>
-        <th class="num">Duración</th>
-        <th class="num">Distancia</th>
-        <th class="num">Críticos</th>
-        <th class="num">Advertencias</th>
-        <th>Impacto estimado</th>
-        <th>Integridad</th>
+        <th>{{ t.th_file }}</th>
+        <th>{{ t.th_format }}</th>
+        <th class="num">{{ t.th_duration }}</th>
+        <th class="num">{{ t.th_distance }}</th>
+        <th class="num">{{ t.th_critical }}</th>
+        <th class="num">{{ t.th_warnings }}</th>
+        <th>{{ t.th_impact_estimated }}</th>
+        <th>{{ t.th_integrity }}</th>
       </tr>
     </thead>
     <tbody>
@@ -113,14 +113,14 @@
         <td class="num sev-critical">{{ flight.critical_events }}</td>
         <td class="num sev-warning">{{ flight.warning_events }}</td>
         <td>
-          {% if flight.has_impact_estimate %}<span class="tag tag-critical">sí</span>{% else %}<span class="tag tag-neutral">no</span>{% endif %}
+          {% if flight.has_impact_estimate %}<span class="tag tag-critical">{{ t.tag_yes }}</span>{% else %}<span class="tag tag-neutral">{{ t.tag_no }}</span>{% endif %}
         </td>
         <td>
-          {% if flight.integrity_clean %}<span class="tag tag-clean">sin indicios</span>{% else %}<span class="tag tag-critical">revisar</span>{% endif %}
+          {% if flight.integrity_clean %}<span class="tag tag-clean">{{ t.integrity_clean_badge }}</span>{% else %}<span class="tag tag-critical">{{ t.tag_review }}</span>{% endif %}
         </td>
       </tr>
     {% else %}
-      <tr><td colspan="9">No se analizó ningún vuelo.</td></tr>
+      <tr><td colspan="9">{{ t.no_flights }}</td></tr>
     {% endfor %}
     </tbody>
   </table>

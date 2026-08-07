@@ -154,6 +154,8 @@ def parse_betaflight_csv(csv_path: str, source_bbl_path: str | None = None) -> F
                             category="rc_loss",
                             severity="critical",
                             description=f"Failsafe activado (fase {failsafe_phase})",
+                            message_key="failsafe_activated",
+                            message_params={"phase": failsafe_phase},
                         )
                     )
                 prev_failsafe_phase = failsafe_phase
@@ -167,6 +169,7 @@ def parse_betaflight_csv(csv_path: str, source_bbl_path: str | None = None) -> F
                             category="rc_loss",
                             severity="warning",
                             description="Se dejo de recibir señal de radiocontrol valida",
+                            message_key="rc_signal_lost",
                         )
                     )
                 prev_rx_signal = rx_signal

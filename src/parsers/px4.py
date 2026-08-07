@@ -191,6 +191,8 @@ def parse_px4_log(file_path: str) -> FlightLog:
                         category="mode_change",
                         severity="info",
                         description=f"Cambio de modo de vuelo a {mode_name}",
+                        message_key="mode_change",
+                        message_params={"mode": mode_name},
                     )
                 )
                 prev_mode = mode_name
