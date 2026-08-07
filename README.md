@@ -172,6 +172,13 @@ de ML por petición) está limitado a 20 peticiones/minuto por IP (`slowapi`),
 para que el plan gratuito de Render no se quede sin recursos si alguien lo
 satura. Pasado el límite, responde `429` en vez de degradarse o caerse.
 
+**Idioma**: selector ES/EN/DE arriba a la derecha, y un botón "i" con una
+ventana explicando qué hace la herramienta, también en los 3 idiomas. Es
+una única página con las 3 traducciones embebidas en JavaScript (sin
+recargar ni tocar el backend) — para una página de una sola pantalla es
+más simple que enrutar idiomas en FastAPI, y la elección se recuerda entre
+visitas (`localStorage`).
+
 **Desplegado en [Render](https://render.com)** (plan gratuito) vía `render.yaml`:
 **https://drone-flight-incident-analyzer.onrender.com**. Sin estado
 persistente que gestionar (cada análisis se procesa en un directorio
@@ -186,7 +193,7 @@ detecta `render.yaml` solo.
 pytest -v
 ```
 
-69 tests que cubren los siete módulos de `src/analysis/`, los cuatro
+70 tests que cubren los siete módulos de `src/analysis/`, los cuatro
 parsers, el CLI, la interfaz web y casos de entrada malformada de extremo a
 extremo, usando fixtures pequeños versionados en `tests/fixtures/` (un
 recorte real de ArduPilot de 64 KB, un log real de PX4 de ~900 KB, CSVs/SRT

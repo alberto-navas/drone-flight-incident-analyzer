@@ -130,3 +130,29 @@ def test_main_module_is_importable():
     `if __name__ == "__main__":` no se ejecuta al importarlo asi.
     """
     import src.web.__main__  # noqa: F401
+
+
+def test_upload_form_has_language_switcher_and_info_modal():
+    """
+    El cambio de idioma y la ventana de info son 100% del lado del cliente
+    (un solo HTML con las 3 traducciones embebidas, ver comentario en
+    upload.html sobre por que). Sin ejecutar JS no se puede probar la
+    interaccion en si (eso se verifico a mano con Playwright durante el
+    desarrollo), pero si se puede comprobar que las piezas necesarias
+    llegan en el HTML servido: los 3 botones de idioma, el modal, y un
+    fragmento reconocible de cada uno de los 3 idiomas.
+    """
+    response = client.get("/")
+    html = response.text
+
+    for lang in ("es", "en", "de"):
+        assert f'data-lang="{lang}"' in html
+
+    assert 'id="info-modal-backdrop"' in html
+    assert 'id="info-btn"' in html
+
+    # Un fragmento de cada idioma, para confirmar que las 3 traducciones
+    # completas viajan en la pagina (no solo los botones del selector).
+    assert "Análisis forense de vuelo" in html  # es
+    assert "Flight forensic analysis" in html  # en
+    assert "Forensische Flugdatenanalyse" in html  # de

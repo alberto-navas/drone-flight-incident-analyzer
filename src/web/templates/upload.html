@@ -21,9 +21,18 @@
   body { margin: 0; padding: 3rem 1.25rem; background: var(--bg); color: var(--ink); font-family: var(--font-sans); display: flex; justify-content: center; }
   main { max-width: 620px; width: 100%; }
 
+  .top-bar { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
   .eyebrow { font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); font-weight: 700; margin: 0 0 0.5rem 0; }
   h1 { margin: 0 0 0.4rem 0; font-size: 1.55rem; font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
   .subtitle { color: var(--muted); margin: 0 0 1.75rem 0; font-size: 0.95rem; }
+
+  .top-controls { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+  .icon-btn { background: var(--surface); color: var(--ink); border: 1px solid var(--border); width: 2rem; height: 2rem; border-radius: 999px; padding: 0; font-size: 1rem; font-weight: 700; font-family: var(--font-serif, Georgia, serif); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
+  .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .lang-switch { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
+  .lang-btn { background: var(--surface); color: var(--muted); border: none; padding: 0.35rem 0.6rem; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700; cursor: pointer; letter-spacing: 0.02em; }
+  .lang-btn + .lang-btn { border-left: 1px solid var(--border); }
+  .lang-btn[aria-pressed="true"] { background: var(--accent); color: var(--surface); }
 
   section { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; }
 
@@ -44,40 +53,71 @@
 
   #status { margin-top: 1rem; color: var(--accent); font-size: 0.87rem; display: none; font-family: var(--font-mono); }
 
-  @media (prefers-reduced-motion: no-preference) { button { transition: filter 0.1s ease; } }
+  /* Ventana de informacion */
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(11, 15, 20, 0.6); display: flex; align-items: center; justify-content: center; padding: 1.25rem; z-index: 100; }
+  .modal-backdrop[hidden] { display: none; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; max-width: 480px; width: 100%; max-height: 85vh; overflow-y: auto; padding: 1.5rem 1.75rem; position: relative; }
+  .modal h2 { margin: 0 0 1rem 0; font-size: 1.15rem; font-weight: 700; padding-right: 1.5rem; }
+  .modal p { color: var(--ink); font-size: 0.9rem; line-height: 1.55; margin: 0 0 0.9rem 0; }
+  .modal p:last-child { margin-bottom: 0; }
+  .modal code { font-family: var(--font-mono); background: var(--surface-alt); padding: 0.05rem 0.3rem; border-radius: 3px; font-size: 0.85em; }
+  .modal a { color: var(--accent); }
+  .modal-close { position: absolute; top: 1rem; right: 1rem; background: transparent; border: none; color: var(--muted); font-size: 1.3rem; width: 1.75rem; height: 1.75rem; padding: 0; border-radius: 6px; cursor: pointer; line-height: 1; }
+  .modal-close:hover { background: var(--surface-alt); color: var(--ink); }
+
+  @media (prefers-reduced-motion: no-preference) { button, .lang-btn, .icon-btn { transition: filter 0.1s ease, background-color 0.1s ease, color 0.1s ease; } }
 </style>
 </head>
 <body>
 <main>
-  <p class="eyebrow">Análisis forense de vuelo</p>
+  <div class="top-bar">
+    <p class="eyebrow" data-i18n="eyebrow">Análisis forense de vuelo</p>
+    <div class="top-controls">
+      <button type="button" class="icon-btn" id="info-btn" data-i18n-title="info_btn_title" title="Información sobre esta herramienta" aria-haspopup="dialog" aria-controls="info-modal">i</button>
+      <div class="lang-switch" role="group" aria-label="Idioma / Language / Sprache">
+        <button type="button" class="lang-btn" data-lang="es" aria-pressed="true">ES</button>
+        <button type="button" class="lang-btn" data-lang="en" aria-pressed="false">EN</button>
+        <button type="button" class="lang-btn" data-lang="de" aria-pressed="false">DE</button>
+      </div>
+    </div>
+  </div>
+
   <h1>Drone Flight Incident Analyzer</h1>
-  <p class="subtitle">Sube uno o varios logs de vuelo y genera el informe directamente aquí, sin usar la terminal.</p>
+  <p class="subtitle" data-i18n="subtitle">Sube uno o varios logs de vuelo y genera el informe directamente aquí, sin usar la terminal.</p>
 
   <section>
     <form id="analyze-form" action="/analyze" method="post" enctype="multipart/form-data">
-      <label for="files">Log(s) de vuelo</label>
+      <label for="files" data-i18n="files_label">Log(s) de vuelo</label>
       <input type="file" id="files" name="files" multiple required>
       <div class="formats">
         <span>ArduPilot .bin</span>
         <span>PX4 .ulog</span>
         <span>Betaflight .BBL / .csv</span>
       </div>
-      <p class="hint">
+      <p class="hint" data-i18n="hint1">
         Un archivo → informe individual. Varios archivos → panel comparativo de flota.
       </p>
 
-      <label for="mass_kg">Masa del vehículo en kg (opcional)</label>
-      <input type="number" id="mass_kg" name="mass_kg" step="0.1" min="0" placeholder="p. ej. 1.5">
-      <p class="hint">
+      <label for="mass_kg" data-i18n="mass_label">Masa del vehículo en kg (opcional)</label>
+      <input type="number" id="mass_kg" name="mass_kg" step="0.1" min="0" placeholder="p. ej. 1.5" data-i18n-placeholder="mass_placeholder">
+      <p class="hint" data-i18n="hint2">
         Solo se usa si el vuelo termina en un descenso brusco: permite calcular la energía cinética estimada del
         impacto. Solo aplica al subir un único archivo.
       </p>
 
-      <button type="submit" id="submit-btn">Analizar</button>
-      <p id="status">Analizando… puede tardar unos segundos (el modelo de detección de anomalías se entrena en el momento).</p>
+      <button type="submit" id="submit-btn" data-i18n="analyze_btn">Analizar</button>
+      <p id="status" data-i18n="status_msg">Analizando… puede tardar unos segundos (el modelo de detección de anomalías se entrena en el momento).</p>
     </form>
   </section>
 </main>
+
+<div class="modal-backdrop" id="info-modal-backdrop" hidden>
+  <div class="modal" id="info-modal" role="dialog" aria-modal="true" aria-labelledby="info-modal-title">
+    <button type="button" class="modal-close" id="info-close" data-i18n-title="info_close_label" title="Cerrar" aria-label="Cerrar">&times;</button>
+    <h2 id="info-modal-title" data-i18n="info_title">¿Qué es esto?</h2>
+    <div id="info-body" data-i18n-html="info_body"></div>
+  </div>
+</div>
 
 <script>
   // Mejora minima de UX: como el analisis puede tardar unos segundos
@@ -86,6 +126,136 @@
   document.getElementById('analyze-form').addEventListener('submit', function () {
     document.getElementById('submit-btn').disabled = true;
     document.getElementById('status').style.display = 'block';
+  });
+
+  // --- Traducciones -------------------------------------------------
+  // Todo el texto visible de la pagina vive aqui, en un solo objeto, en
+  // vez de servir 3 plantillas HTML distintas desde el backend: para una
+  // pagina de una sola pantalla como esta, cambiar el idioma en el
+  // cliente (sin recargar) es mas simple que añadir enrutado/estado de
+  // idioma en FastAPI, y no requiere tocar el resto del pipeline.
+  var GITHUB_URL = "https://github.com/alberto-navas/drone-flight-incident-analyzer";
+
+  var translations = {
+    es: {
+      eyebrow: "Análisis forense de vuelo",
+      subtitle: "Sube uno o varios logs de vuelo y genera el informe directamente aquí, sin usar la terminal.",
+      files_label: "Log(s) de vuelo",
+      hint1: "Un archivo → informe individual. Varios archivos → panel comparativo de flota.",
+      mass_label: "Masa del vehículo en kg (opcional)",
+      mass_placeholder: "p. ej. 1.5",
+      hint2: "Solo se usa si el vuelo termina en un descenso brusco: permite calcular la energía cinética estimada del impacto. Solo aplica al subir un único archivo.",
+      analyze_btn: "Analizar",
+      status_msg: "Analizando… puede tardar unos segundos (el modelo de detección de anomalías se entrena en el momento).",
+      info_btn_title: "Información sobre esta herramienta",
+      info_close_label: "Cerrar",
+      info_title: "¿Qué es esto?",
+      info_body:
+        "<p><strong>Drone Flight Incident Analyzer</strong> analiza automáticamente los datos que un dron graba durante el vuelo (su «caja negra») y genera un informe: la ruta que siguió, si hubo algún fallo (batería, señal, GPS) y, si el vuelo terminó en una caída, dónde y a qué velocidad probablemente impactó.</p>" +
+        "<p>Combina reglas explicables con un modelo de aprendizaje automático que aprende qué es normal para cada vuelo en concreto, y verifica si el propio archivo muestra indicios de haber sido manipulado.</p>" +
+        "<p><strong>Cómo usarlo:</strong> sube el archivo de log del dron (ArduPilot <code>.bin</code>, PX4 <code>.ulog</code> o Betaflight <code>.BBL</code>/<code>.csv</code>). Un archivo genera un informe individual; varios archivos, un panel comparativo de flota.</p>" +
+        "<p>Proyecto de código abierto — <a href=\"" + GITHUB_URL + "\" target=\"_blank\" rel=\"noopener\">ver en GitHub</a>.</p>",
+    },
+    en: {
+      eyebrow: "Flight forensic analysis",
+      subtitle: "Upload one or more flight logs and generate the report directly here — no terminal needed.",
+      files_label: "Flight log(s)",
+      hint1: "One file → individual report. Several files → fleet comparison dashboard.",
+      mass_label: "Vehicle mass in kg (optional)",
+      mass_placeholder: "e.g. 1.5",
+      hint2: "Only used if the flight ends in a sharp descent: it lets us estimate the kinetic energy of the impact. Only applies when uploading a single file.",
+      analyze_btn: "Analyze",
+      status_msg: "Analyzing… this can take a few seconds (the anomaly-detection model is trained on the spot).",
+      info_btn_title: "About this tool",
+      info_close_label: "Close",
+      info_title: "What is this?",
+      info_body:
+        "<p><strong>Drone Flight Incident Analyzer</strong> automatically analyzes the data a drone records during flight (its “black box”) and produces a report: the route it flew, whether anything went wrong (battery, signal, GPS), and — if the flight ended in a crash — where and at what speed it likely hit the ground.</p>" +
+        "<p>It combines explainable rules with a machine-learning model that learns what's normal for each individual flight, and checks whether the log file itself shows signs of tampering.</p>" +
+        "<p><strong>How to use it:</strong> upload the drone's log file (ArduPilot <code>.bin</code>, PX4 <code>.ulog</code>, or Betaflight <code>.BBL</code>/<code>.csv</code>). One file produces an individual report; several files produce a fleet comparison dashboard.</p>" +
+        "<p>Open-source project — <a href=\"" + GITHUB_URL + "\" target=\"_blank\" rel=\"noopener\">view on GitHub</a>.</p>",
+    },
+    de: {
+      eyebrow: "Forensische Flugdatenanalyse",
+      subtitle: "Lade eine oder mehrere Flug-Logs hoch und erstelle den Bericht direkt hier — ganz ohne Terminal.",
+      files_label: "Flug-Log(s)",
+      hint1: "Eine Datei → Einzelbericht. Mehrere Dateien → Flottenvergleich.",
+      mass_label: "Fahrzeugmasse in kg (optional)",
+      mass_placeholder: "z. B. 1.5",
+      hint2: "Wird nur verwendet, wenn der Flug in einem starken Sinkflug endet: damit lässt sich die geschätzte kinetische Energie des Aufpralls berechnen. Gilt nur beim Hochladen einer einzelnen Datei.",
+      analyze_btn: "Analysieren",
+      status_msg: "Analysiere… das kann einige Sekunden dauern (das Modell zur Anomalieerkennung wird gerade trainiert).",
+      info_btn_title: "Über dieses Tool",
+      info_close_label: "Schließen",
+      info_title: "Was ist das?",
+      info_body:
+        "<p><strong>Drone Flight Incident Analyzer</strong> analysiert automatisch die Daten, die eine Drohne während des Fluges aufzeichnet (ihre „Black Box“), und erstellt einen Bericht: die geflogene Route, ob etwas schiefgelaufen ist (Akku, Signal, GPS) und — falls der Flug in einem Absturz endete — wo und mit welcher Geschwindigkeit sie wahrscheinlich aufgeschlagen ist.</p>" +
+        "<p>Es kombiniert nachvollziehbare Regeln mit einem maschinellen Lernmodell, das lernt, was für jeden einzelnen Flug normal ist, und prüft, ob die Logdatei selbst Anzeichen einer Manipulation zeigt.</p>" +
+        "<p><strong>Verwendung:</strong> Lade die Logdatei der Drohne hoch (ArduPilot <code>.bin</code>, PX4 <code>.ulog</code> oder Betaflight <code>.BBL</code>/<code>.csv</code>). Eine Datei erzeugt einen Einzelbericht, mehrere Dateien einen Flottenvergleich.</p>" +
+        "<p>Open-Source-Projekt — <a href=\"" + GITHUB_URL + "\" target=\"_blank\" rel=\"noopener\">auf GitHub ansehen</a>.</p>",
+    }
+  };
+
+  function applyLanguage(lang) {
+    var dict = translations[lang] || translations.es;
+    document.documentElement.lang = lang;
+
+    document.querySelectorAll('[data-i18n]').forEach(function (el) {
+      var key = el.getAttribute('data-i18n');
+      if (dict[key] !== undefined) el.textContent = dict[key];
+    });
+    document.querySelectorAll('[data-i18n-html]').forEach(function (el) {
+      var key = el.getAttribute('data-i18n-html');
+      if (dict[key] !== undefined) el.innerHTML = dict[key];
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(function (el) {
+      var key = el.getAttribute('data-i18n-placeholder');
+      if (dict[key] !== undefined) el.setAttribute('placeholder', dict[key]);
+    });
+    document.querySelectorAll('[data-i18n-title]').forEach(function (el) {
+      var key = el.getAttribute('data-i18n-title');
+      if (dict[key] !== undefined) {
+        el.setAttribute('title', dict[key]);
+        el.setAttribute('aria-label', dict[key]);
+      }
+    });
+
+    document.querySelectorAll('.lang-btn').forEach(function (btn) {
+      btn.setAttribute('aria-pressed', btn.getAttribute('data-lang') === lang ? 'true' : 'false');
+    });
+
+    try { localStorage.setItem('drone-analyzer-lang', lang); } catch (e) { /* almacenamiento no disponible: no es critico, simplemente no se recuerda la eleccion */ }
+  }
+
+  document.querySelectorAll('.lang-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () { applyLanguage(btn.getAttribute('data-lang')); });
+  });
+
+  var savedLang = 'es';
+  try { savedLang = localStorage.getItem('drone-analyzer-lang') || 'es'; } catch (e) { /* ver comentario arriba */ }
+  applyLanguage(savedLang);
+
+  // --- Ventana de informacion ----------------------------------------
+  var infoBtn = document.getElementById('info-btn');
+  var infoBackdrop = document.getElementById('info-modal-backdrop');
+  var infoClose = document.getElementById('info-close');
+
+  function openInfo() {
+    infoBackdrop.hidden = false;
+    infoClose.focus();
+  }
+  function closeInfo() {
+    infoBackdrop.hidden = true;
+    infoBtn.focus();
+  }
+
+  infoBtn.addEventListener('click', openInfo);
+  infoClose.addEventListener('click', closeInfo);
+  infoBackdrop.addEventListener('click', function (event) {
+    if (event.target === infoBackdrop) closeInfo(); // click fuera del cuadro, sobre el fondo
+  });
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape' && !infoBackdrop.hidden) closeInfo();
   });
 </script>
 </body>
