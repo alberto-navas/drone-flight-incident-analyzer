@@ -74,6 +74,12 @@ garantía de "cero falsos positivos", es una propiedad del algoritmo.
 
 ## Arquitectura
 
+<p align="center">
+  <img src="docs/screenshots/arquitectura.png" alt="Diagrama: tres formatos de log se normalizan a un modelo común FlightLog, que se analiza en paralelo con reglas, ML, física de impacto e integridad, y converge en un informe" width="900">
+</p>
+
+Detalle a nivel de archivo:
+
 ```
 log (.bin / .ulog / .BBL / .csv)
         │
