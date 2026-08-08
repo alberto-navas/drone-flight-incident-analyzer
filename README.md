@@ -1,5 +1,7 @@
 # Drone Flight Incident Analyzer
 
+**Español** · [English](README.en.md)
+
 ![Tests](https://github.com/alberto-navas/drone-flight-incident-analyzer/actions/workflows/tests.yml/badge.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -208,9 +210,10 @@ detecta `render.yaml` solo.
 pytest -v
 ```
 
-70 tests que cubren los siete módulos de `src/analysis/`, los cuatro
-parsers, el CLI, la interfaz web y casos de entrada malformada de extremo a
-extremo, usando fixtures pequeños versionados en `tests/fixtures/` (un
+84 tests que cubren los siete módulos de `src/analysis/`, los cuatro
+parsers, el módulo de traducción (`src/report/i18n.py`), el CLI, la interfaz
+web y casos de entrada malformada de extremo a extremo, usando fixtures
+pequeños versionados en `tests/fixtures/` (un
 recorte real de ArduPilot de 64 KB, un log real de PX4 de ~900 KB, CSVs/SRT
 sintéticos, y archivos vacíos/corruptos en `tests/fixtures/malformed/`) — no
 dependen de descargar nada externo, así que corren igual en local que en
@@ -276,9 +279,6 @@ no de operación en tiempo real. La estimación de impacto es física básica
 
 ## Posibles extensiones
 
-- Detección de anomalías por ML (p. ej. Isolation Forest) en vez de reglas
-  fijas, para hallazgos que no encajan en ningún patrón predefinido.
-- Interfaz web (subir log → descargar informe) sobre el mismo `src/cli.py`.
 - Capturar la hora UTC real de inicio del log en los parsers (ArduPilot y
   PX4 la tienen disponible internamente) para poder alinear automáticamente
   el vídeo sin offset manual.

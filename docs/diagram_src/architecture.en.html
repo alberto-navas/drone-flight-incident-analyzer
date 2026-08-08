@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Architecture — Drone Flight Incident Analyzer</title>
+<style>
+  :root {
+    --bg: #0b0f14; --surface: #131a22; --ink: #e6ebf0; --muted: #93a1b4;
+    --border: #2c3947; --accent: #6fb3d9; --accent-strong: #9ecae8;
+    --font-mono: ui-monospace, "Cascadia Code", "SF Mono", Consolas, "Roboto Mono", monospace;
+    --font-sans: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 2.5rem 2rem; background: var(--bg); color: var(--ink); font-family: var(--font-sans); }
+  .page { max-width: 1200px; margin: 0 auto; }
+  .eyebrow { font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); font-weight: 700; margin: 0 0 0.4rem 0; }
+  h1 { margin: 0 0 1.5rem 0; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; }
+  figure { margin: 0; }
+  figcaption { margin-top: 1rem; color: var(--muted); font-size: 0.88rem; line-height: 1.5; max-width: 900px; }
+  figcaption strong { color: var(--ink); }
+  svg { width: 100%; height: auto; display: block; color: var(--ink); }
+  .box-fill { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
+  .box-fill-accent { fill: #17293a; stroke: var(--accent); stroke-width: 2; }
+  .box-label { font-family: var(--font-mono); font-size: 15px; fill: var(--ink); text-anchor: middle; }
+  .box-label-sub { font-family: var(--font-mono); font-size: 11px; fill: var(--muted); text-anchor: middle; }
+  .box-label-accent { font-family: var(--font-mono); font-size: 16px; font-weight: 700; fill: var(--accent-strong); text-anchor: middle; }
+  .edge { stroke: var(--muted); stroke-width: 1.4; fill: none; opacity: 0.75; }
+  .edge-label { font-family: var(--font-mono); font-size: 11px; fill: var(--muted); text-anchor: middle; }
+  .col-title { font-family: var(--font-mono); font-size: 11px; fill: var(--muted); text-anchor: middle; text-transform: uppercase; letter-spacing: 0.06em; }
+</style>
+</head>
+<body>
+<div class="page">
+  <p class="eyebrow">Architecture</p>
+  <h1>Drone Flight Incident Analyzer — from raw log to report</h1>
+
+  <figure>
+    <svg viewBox="0 0 1360 560" role="img" aria-label="Three log formats (ArduPilot, PX4, Betaflight) are normalized into a common FlightLog model, which is analyzed in parallel by fixed rules, a machine learning model, impact physics, and integrity verification, converging into a final report.">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor" opacity="0.75"></path>
+        </marker>
+      </defs>
+
+      <!-- Column titles -->
+      <text class="col-title" x="110" y="45">Flight log</text>
+      <text class="col-title" x="380" y="45">Parser</text>
+      <text class="col-title" x="650" y="45">Common model</text>
+      <text class="col-title" x="950" y="45">Analysis (parallel)</text>
+      <text class="col-title" x="1220" y="45">Output</text>
+
+      <!-- Col 1: input formats -->
+      <rect class="box-fill" x="25" y="150" width="170" height="60" rx="6"></rect>
+      <text class="box-label" x="110" y="176">ArduPilot</text>
+      <text class="box-label-sub" x="110" y="196">.bin</text>
+
+      <rect class="box-fill" x="25" y="270" width="170" height="60" rx="6"></rect>
+      <text class="box-label" x="110" y="296">PX4</text>
+      <text class="box-label-sub" x="110" y="316">.ulog</text>
+
+      <rect class="box-fill" x="25" y="390" width="170" height="60" rx="6"></rect>
+      <text class="box-label" x="110" y="416">Betaflight</text>
+      <text class="box-label-sub" x="110" y="436">.BBL / .csv</text>
+
+      <!-- Col 2: parsers -->
+      <rect class="box-fill" x="295" y="150" width="170" height="60" rx="6"></rect>
+      <text class="box-label" x="380" y="186">ardupilot.py</text>
+
+      <rect class="box-fill" x="295" y="270" width="170" height="60" rx="6"></rect>
+      <text class="box-label" x="380" y="306">px4.py</text>
+
+      <rect class="box-fill" x="295" y="390" width="170" height="60" rx="6"></rect>
+      <text class="box-label" x="380" y="426">betaflight.py</text>
+
+      <!-- Col1 -> Col2 (same format, unambiguous, no label) -->
+      <line class="edge" x1="195" y1="180" x2="295" y2="180" marker-end="url(#arrow)"></line>
+      <line class="edge" x1="195" y1="300" x2="295" y2="300" marker-end="url(#arrow)"></line>
+      <line class="edge" x1="195" y1="420" x2="295" y2="420" marker-end="url(#arrow)"></line>
+
+      <!-- Col 3: FlightLog (common model, convergence point) -->
+      <rect class="box-fill-accent" x="550" y="255" width="200" height="90" rx="8"></rect>
+      <text class="box-label-accent" x="650" y="296">FlightLog</text>
+      <text class="box-label-sub" x="650" y="316">FlightRecord + FlightEvent</text>
+
+      <!-- Col2 -> Col3: normalizes (3 formats converge into 1 model) -->
+      <path class="edge" d="M465,180 C 510,180 510,270 550,278" marker-end="url(#arrow)"></path>
+      <line class="edge" x1="465" y1="300" x2="550" y2="300" marker-end="url(#arrow)"></line>
+      <path class="edge" d="M465,420 C 510,420 510,330 550,322" marker-end="url(#arrow)"></path>
+      <text class="edge-label" x="505" y="245">normalizes</text>
+
+      <!-- Col 4: parallel analysis -->
+      <rect class="box-fill" x="865" y="90" width="170" height="60" rx="6"></rect>
+      <text class="box-label" x="950" y="126">Rules</text>
+
+      <rect class="box-fill" x="865" y="210" width="170" height="60" rx="6"></rect>
+      <text class="box-label" x="950" y="246">ML</text>
+
+      <rect class="box-fill" x="865" y="330" width="170" height="60" rx="6"></rect>
+      <text class="box-label" x="950" y="366">Impact</text>
+
+      <rect class="box-fill" x="865" y="450" width="170" height="60" rx="6"></rect>
+      <text class="box-label" x="950" y="486">Integrity</text>
+
+      <!-- Col3 -> Col4: 4 distinct techniques, each with its own condition -->
+      <path class="edge" d="M750,275 C 810,275 810,120 865,120" marker-end="url(#arrow)"></path>
+      <text class="edge-label" x="812" y="170">explicit threshold</text>
+
+      <path class="edge" d="M750,288 C 800,288 800,240 865,240" marker-end="url(#arrow)"></path>
+      <text class="edge-label" x="812" y="270">learns from this flight</text>
+
+      <path class="edge" d="M750,312 C 800,312 800,360 865,360" marker-end="url(#arrow)"></path>
+      <text class="edge-label" x="812" y="345">if cut mid-descent</text>
+
+      <path class="edge" d="M750,325 C 810,325 810,480 865,480" marker-end="url(#arrow)"></path>
+      <text class="edge-label" x="812" y="440">looks for tampering</text>
+
+      <!-- Col 5: final report -->
+      <rect class="box-fill-accent" x="1135" y="260" width="170" height="80" rx="8"></rect>
+      <text class="box-label-accent" x="1220" y="298">Report</text>
+      <text class="box-label-sub" x="1220" y="318">Self-contained HTML</text>
+
+      <!-- Col4 -> Col5: the 4 findings converge into the report -->
+      <path class="edge" d="M1035,120 C 1080,120 1080,272 1135,278" marker-end="url(#arrow)"></path>
+      <path class="edge" d="M1035,240 C 1075,240 1075,288 1135,290" marker-end="url(#arrow)"></path>
+      <path class="edge" d="M1035,360 C 1075,360 1075,312 1135,310" marker-end="url(#arrow)"></path>
+      <path class="edge" d="M1035,480 C 1080,480 1080,328 1135,322" marker-end="url(#arrow)"></path>
+    </svg>
+    <figcaption>
+      The three supported log formats are translated into a single data model (<strong>FlightLog</strong>) before
+      any other part of the system touches them. From there, four independent analysis techniques run in
+      parallel over the same data — each with a distinct condition and method, not layers of the same idea —
+      and converge into a single report. The CLI and the web interface are two separate entry points into the
+      same pipeline, not separate code paths.
+    </figcaption>
+  </figure>
+</div>
+</body>
+</html>
