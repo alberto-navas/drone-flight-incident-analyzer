@@ -24,6 +24,15 @@ HTML autocontenidos.
   <img src="docs/screenshots/interfaz_web.png" alt="Interfaz web: formulario de subida de logs" width="49%">
 </p>
 
+El informe completo — no solo la web de subida — se genera en el idioma
+elegido, incluida la descripción de cada hallazgo concreto:
+
+<p align="center">
+  <img src="docs/screenshots/informe_es.png" alt="Cabecera del informe en español" width="32%">
+  <img src="docs/screenshots/informe_en.png" alt="Cabecera del informe en inglés" width="32%">
+  <img src="docs/screenshots/informe_de.png" alt="Cabecera del informe en alemán" width="32%">
+</p>
+
 ## Motivación
 
 Con el aumento de drones derribados/estrellados (uso civil y militar), la
