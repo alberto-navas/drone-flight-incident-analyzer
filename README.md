@@ -16,7 +16,7 @@ y compara varios vuelos a la vez en un panel de flota — todo en informes
 HTML autocontenidos.
 
 <p align="center">
-  <img src="docs/screenshots/informe_individual.png" alt="Informe de vuelo: ruta, telemetría, estimación de impacto, sincronización con vídeo y verificación de integridad" width="800">
+  <img src="docs/screenshots/demo.gif" alt="Demo: subir un log, generar el informe y recorrer ruta de vuelo, telemetría, estimación de impacto y línea de tiempo de eventos" width="800">
 </p>
 
 <p align="center">
